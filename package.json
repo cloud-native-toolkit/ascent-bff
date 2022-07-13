@@ -1,7 +1,7 @@
 {
-  "name": "FS-Cloud-Architectures",
+  "name": "ascent-solution-builder-apis",
   "version": "0.0.1",
-  "description": "Backend for Frontend for managing relationships between architectures, boms, services and automation and fs controls",
+  "description": "Backend for Frontend for managing relationships between architectures, boms, services and automation",
   "keywords": [
     "loopback-application",
     "loopback"
