@@ -129,6 +129,7 @@ export class SolutionController {
 
     // Bind BOMs to solution
     const archsWithDetails = [];
+    body.architectures = body.architectures.sort((a,b) => a.arch_id < b.arch_id ? -1 : 1);
     for (const arch of body.architectures) {
       await this.solutionRepository.architectures(newSolution.id).link(arch.arch_id);
       try {
