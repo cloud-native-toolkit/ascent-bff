@@ -45,26 +45,26 @@ const HEADERS = [
   "name",
   "risk_desc",
   "objective",
-  "fs_guidance",
-  "fs_params",
   "nist_guidance",
+  "fs_guidance",
   "requirement_id",
   "requirement_description",
-  "requirement_risk_rating",
+  "fs_params",
+  //"requirement_risk_rating",
   "requirement_control_type_1",
   "requirement_control_type_2",
   "requirement_control_type_3",
-  "ibm_public_cloud_scope",
-  "ibm_public_cloud_resp",
-  "developer_scope",
-  "developer_resp",
-  "operator_scope",
-  "operator_resp",
-  "consumer_scope",
-  "consumer_resp",
-  "scc",
-  "scc_goal_id",
-  "scc_goal_desc"
+  //"ibm_public_cloud_scope",
+  //"ibm_public_cloud_resp",
+  //"developer_scope",
+  //"developer_resp",
+  //"operator_scope",
+  //"operator_resp",
+  //"consumer_scope",
+  //"consumer_resp",
+  //"scc",
+  //"scc_goal_id",
+  //"scc_goal_desc"
 ];
 
 interface ParsedItem {
@@ -269,7 +269,7 @@ export class ControlsController {
             if (fileErr.message) return reject(res.status(400).send({error: fileErr}));
   
             const wb = this.xlsxHelper.read(files[0].buffer, {type:'buffer'});
-            const sheet = wb.Sheets['DRAFT Framewrok'];
+            const sheet = wb.Sheets['FS Cloud Framework'];
             while(!sheet['A1']?.w .startsWith('#')) {
               this.xlsxHelper.delete_row(sheet, 0);
             }
