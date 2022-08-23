@@ -142,7 +142,7 @@ export class SolutionController {
     const readme = `
 # Ascent Solution: ${newSolution.name}
 
-Please return to [your solution](https://ascent.cloudnativetoolkit.dev/solutions/${newSolution.id}) to make changes.
+Please return to [your solution](https://builder.techzone-automation.com/solutions/${newSolution.id}) to make changes.
 
 This collection of terraform automation bundles has been crafted from a set of Terraform modules created by Ecosytem Lab team part of the IBM Strategic Partnership. Please contact Matthew Perrins mjperrin@us.ibm.com, Sean Sundberg seansund@us.ibm.com, Andrew Trice amtrice@us.ibm.com or Noé Samaille noe.samaille@ibm.com for more details.
 
@@ -158,7 +158,7 @@ ${newSolution.long_desc ? newSolution.long_desc : newSolution.short_desc ? newSo
 
 | ID | Name | Description | 
 | -- | ---- | ----------- |
-${archsWithDetails.map(arch => `| ${arch.arch_id} | [${arch.name}](https://ascent.cloudnativetoolkit.dev/boms/${arch.arch_id}) | ${arch.short_desc} |`).join('\n')}
+${archsWithDetails.map(arch => `| ${arch.arch_id} | [${arch.name}](https://builder.techzone-automation.com/boms/${arch.arch_id}) | ${arch.short_desc} |`).join('\n')}
 
     `
     // Put default readme for solution

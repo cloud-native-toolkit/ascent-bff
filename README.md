@@ -1,8 +1,8 @@
-# Ascent BFF
+# TechZone Automation Builder BFF
 
-This repository contains the Back-End micro-service of the Ascent tool.
+This repository contains the Back-End micro-service of the TechZone Automation Builder tool.
 
-Ascent is a tool created by the IBM Ecosystem Lab to accelerate the adoption of IBM Software on Hybrid Cloud. Through automation and integration, Ascent enables enterprises to deliver compliant cloud architectures which can be clearly evidenced and communicated with Governance, Risk and Compliance teams.
+TechZone Automation Builder is a tool created by the IBM Ecosystem Lab to accelerate the adoption of IBM Software on Hybrid Cloud. Through automation and integration, Ascent enables enterprises to deliver compliant cloud architectures which can be clearly evidenced and communicated with Governance, Risk and Compliance teams.
 
 This application backend will enable a collection of APIs that will support the relationship between a 
 Reference Architecture and its Bill of Materials(BOM) (list of comprising services). The BOM relationship to 
