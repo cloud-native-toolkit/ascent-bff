@@ -6,7 +6,10 @@ WORKDIR /opt/app-root/src
 
 COPY --chown=default . .
 
-RUN ls -lA && npm ci && npm run build
+RUN ls -lA && npm i -g yarn && \
+    yarn install && \
+    yarn cache clean && \
+    yarn build
 
 LABEL name="ibm/template-node-typescript" \
       vendor="IBM" \
