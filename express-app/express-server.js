@@ -45,9 +45,6 @@ if (process.env.NODE_ENV !== "dev" && process.env.NODE_ENV !== "test") {
             }, (err, response, body) => {
                 const user = JSON.parse(body);
                 req.scopes = [];
-                if (user?.groups?.includes("ascent-fs-viewers")) {
-                    req.scopes.push("view_controls");
-                }
                 if (user?.groups?.includes("ascent-editors")) {
                     req.scopes.push("edit");
                 }
