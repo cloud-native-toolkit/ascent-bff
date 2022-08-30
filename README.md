@@ -195,11 +195,10 @@ Follow either of the steps below depending on the authentication provider you wa
       1. Go to your [resource list](https://cloud.ibm.com/resources).
       2. Select your AppId service.
       3. In the **Applications** section, copy your app credentials. **If none**:
-         1. Create one with following scopes: `edit`, `view_controls`, `super_edit`.
+         1. Create one with following scopes: `edit`, `super_edit`.
          2. Create Roles
             1. `editor` with scopes: `read`, `edit`
             2. `admin` with scopes: `read`, `edit`, `super_edit`
-            3. `fs-controls-viewer` with scopes: `read`, `view_controls`
          3. Assign Roles
    2. In the `ascent-dev` project, update the AppId secrets to add the new `binding-application` key with the value you just copied:
       1. In the **Workloads > Secrets** section, select the `ascent-appid-config` secret.
