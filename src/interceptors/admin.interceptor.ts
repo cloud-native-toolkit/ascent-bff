@@ -20,6 +20,17 @@ import {
     'ControlsController.prototype.importControls',
     'ArchitecturesBomController.prototype.uploadBomYaml',
   ]
+
+  const publicResourceTargets = [
+    'ArchitecturesController.prototype.create',
+    'ArchitecturesController.prototype.updateAll',
+    'ArchitecturesController.prototype.updateById',
+    'SolutionController.prototype.create',
+    'SolutionController.prototype.updateById',
+  ]
+  const publicResourceBodyTargets = [
+    'ArchitecturesBomController.prototype.uploadBomYaml',
+  ]
   
   /**
    * Interceptor checking that user has ownership over resources he's trying to
