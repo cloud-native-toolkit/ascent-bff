@@ -21,8 +21,8 @@ import {
    * Interceptor checking that user has ownership over resources he's trying to
    * access.
    */
-  @injectable(asGlobalInterceptor('admin'))
-  export class AdminInterceptor implements Provider<Interceptor> {
+  @injectable(asGlobalInterceptor('user'))
+  export class UserInterceptor implements Provider<Interceptor> {
   
     value() {
       return async (

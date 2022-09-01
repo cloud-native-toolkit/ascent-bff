@@ -1,8 +1,6 @@
 {
   "secrets": {
     "database": "DATABASE_DEV",
-    "host" :  "INGRESS_HOST",
-    "redis" : "REDIS",
     "storage" : "STORAGE"
   }
 }

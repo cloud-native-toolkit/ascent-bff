@@ -1,8 +1,6 @@
 {
   "secrets": {
     "database": "DATABASE_TEST",
-    "host" :  "INGRESS_HOST",
-    "redis" : "REDIS",
     "storage" : "STORAGE"
   }
 }
