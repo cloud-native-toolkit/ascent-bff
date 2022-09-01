@@ -44,7 +44,6 @@ import {
         ctx: InvocationContext,
         next: () => ValueOrPromise<InvocationResult>,
       ) => {
-        console.log("admin interceptor")
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const request:any = await ctx.get(RestBindings.Http.REQUEST);
         const response = await ctx.get(RestBindings.Http.RESPONSE);
