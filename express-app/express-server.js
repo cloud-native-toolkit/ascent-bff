@@ -44,10 +44,7 @@ if (process.env.NODE_ENV !== "dev" && process.env.NODE_ENV !== "test") {
                 }
             }, (err, response, body) => {
                 const user = JSON.parse(body);
-                req.scopes = [];
-                if (user?.groups?.includes("ascent-editors")) {
-                    req.scopes.push("edit");
-                }
+                req.scopes = ["edit"];
                 if (user?.groups?.includes("ascent-admins")) {
                     req.scopes.push("super_edit");
                 }
@@ -71,6 +68,7 @@ if (process.env.NODE_ENV !== "dev" && process.env.NODE_ENV !== "test") {
             });
         } else {
             req.scopes = req?.appIdAuthorizationContext?.accessTokenPayload?.scope?.split(" ");
+            req.scopes.push("edit"); // Every user is editor by default
             if (!editorMethods.includes(req.method) || req.scopes.includes("edit")) {
                 next();
             } else {
