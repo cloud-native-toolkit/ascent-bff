@@ -27,6 +27,8 @@ import  AdmZip = require("adm-zip");
 
 import { AutomationCatalogController } from '../controllers';
 
+import YAML from 'yaml';
+
 import {Services} from '../appenv';
 
 import {
@@ -133,16 +135,17 @@ export class SolutionController {
     for (const arch of body.architectures) {
       await this.solutionRepository.architectures(newSolution.id).link(arch.arch_id);
       try {
-        archsWithDetails.push(await this.architecturesRepository.findById(arch.arch_id));
+        const archObj = await this.architecturesRepository.findById(arch.arch_id);
+        archsWithDetails.push({ ...archObj, type: YAML.parse(archObj.yaml)?.metadata?.labels?.type });
       } catch (error) {
         console.log(error);
       }
     }
     // Creates default README
     const readme = `
-# Ascent Solution: ${newSolution.name}
+# Solution: ${newSolution.name}
 
-Please return to [your solution](https://ascent.cloudnativetoolkit.dev/solutions/${newSolution.id}) to make changes.
+Please return to [your solution](https://builder.cloudnativetoolkit.dev/solutions/${newSolution.id}) to make changes.
 
 This collection of terraform automation bundles has been crafted from a set of Terraform modules created by Ecosytem Lab team part of the IBM Strategic Partnership. Please contact Matthew Perrins mjperrin@us.ibm.com, Sean Sundberg seansund@us.ibm.com, Andrew Trice amtrice@us.ibm.com or Noé Samaille noe.samaille@ibm.com for more details.
 
@@ -156,9 +159,17 @@ ${newSolution.long_desc ? newSolution.long_desc : newSolution.short_desc ? newSo
 
 ## Bill Of Materials used in this solution
 
+### Infrastructure
+
 | ID | Name | Description | 
 | -- | ---- | ----------- |
-${archsWithDetails.map(arch => `| ${arch.arch_id} | [${arch.name}](https://ascent.cloudnativetoolkit.dev/boms/${arch.arch_id}) | ${arch.short_desc} |`).join('\n')}
+${archsWithDetails.filter(arch => arch.type !== 'software').map(arch => `| ${arch.arch_id} | [${arch.name}](https://builder.cloudnativetoolkit.dev/boms/${arch.arch_id}) | ${arch.short_desc} |`).join('\n')}
+
+### Software
+
+| ID | Name | Description | 
+| -- | ---- | ----------- |
+${archsWithDetails.filter(arch => arch.type === 'software').map(arch => `| ${arch.arch_id} | [${arch.name}](https://builder.cloudnativetoolkit.dev/boms/${arch.arch_id}) | ${arch.short_desc} |`).join('\n')}
 
     `
     // Put default readme for solution
