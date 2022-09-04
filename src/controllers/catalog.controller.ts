@@ -6,6 +6,7 @@ import {
 } from '@loopback/rest';
 import fetch from 'node-fetch';
 import { createNodeRedisClient } from 'handy-redis';
+import { URL } from 'url';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
