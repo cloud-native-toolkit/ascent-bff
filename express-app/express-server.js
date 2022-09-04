@@ -34,7 +34,7 @@ if (process.env.NODE_ENV !== "dev" && process.env.NODE_ENV !== "test") {
         }));
     }
 
-    const editorMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
+    const editorMethods = [];
     app.use((req, res, next) => {
         if (process.env.OCP_API_URL && req.headers['authorization']) {
             request({
@@ -44,7 +44,7 @@ if (process.env.NODE_ENV !== "dev" && process.env.NODE_ENV !== "test") {
                 }
             }, (err, response, body) => {
                 const user = JSON.parse(body);
-                req.scopes = ["edit"];
+                req.scopes = ["view_controls", "edit"];
                 if (user?.groups?.includes("ascent-admins")) {
                     req.scopes.push("super_edit");
                 }
@@ -68,7 +68,8 @@ if (process.env.NODE_ENV !== "dev" && process.env.NODE_ENV !== "test") {
             });
         } else {
             req.scopes = req?.appIdAuthorizationContext?.accessTokenPayload?.scope?.split(" ");
-            req.scopes.push("edit"); // Every user is editor by default
+            req.scopes.push("view_controls");
+            req.scopes.push("edit");
             if (!editorMethods.includes(req.method) || req.scopes.includes("edit")) {
                 next();
             } else {
