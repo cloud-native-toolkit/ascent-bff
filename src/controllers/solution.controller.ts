@@ -147,7 +147,9 @@ export class SolutionController {
 
 Please return to [your solution](https://builder.cloudnativetoolkit.dev/solutions/${newSolution.id}) to make changes.
 
-This collection of terraform automation bundles has been crafted from a set of Terraform modules created by Ecosytem Lab team part of the IBM Strategic Partnership. Please contact Matthew Perrins mjperrin@us.ibm.com, Sean Sundberg seansund@us.ibm.com, Andrew Trice amtrice@us.ibm.com or Noé Samaille noe.samaille@ibm.com for more details.
+This collection of terraform automation bundles has been crafted from a set of Terraform modules created by Ecosytem Lab team part of the IBM Strategic Partnership.
+
+If you have any question please reach out to us on [Discord](https://discord.gg/7sSY9W2cZf).
 
 ## Change Log
 
@@ -157,7 +159,9 @@ This collection of terraform automation bundles has been crafted from a set of T
 
 ${newSolution.long_desc ? newSolution.long_desc : newSolution.short_desc ? newSolution.short_desc : 'Update this section to describe your solution'}
 
-## Bill Of Materials used in this solution
+## Bill Of Materials
+
+The following is a list of the bill of materials used as part of this solution:
 
 ### Infrastructure
 
@@ -170,6 +174,9 @@ ${archsWithDetails.filter(arch => arch.type !== 'software').map(arch => `| ${arc
 | ID | Name | Description | 
 | -- | ---- | ----------- |
 ${archsWithDetails.filter(arch => arch.type === 'software').map(arch => `| ${arch.arch_id} | [${arch.name}](https://builder.cloudnativetoolkit.dev/boms/${arch.arch_id}) | ${arch.short_desc} |`).join('\n')}
+
+
+This solution was built with the [Techzone Accelerator Toolkit](https://builder.cloudnativetoolkit.dev/).
 
     `
     // Put default readme for solution
