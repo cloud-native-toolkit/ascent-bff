@@ -402,7 +402,7 @@ export class ServicesHelper {
         }
 
         // Output Terraform Components
--        await Promise.all(iascableResult.terraformComponent.files.map(async (file: OutputFile) => {
+        await Promise.all(iascableResult.terraformComponent.files.map(async (file: OutputFile) => {
             function getContents(url: string) {
                 // eslint-disable-next-line @typescript-eslint/no-misused-promises, no-async-promise-executor
                 return new Promise<string>(async (resolve) => {
