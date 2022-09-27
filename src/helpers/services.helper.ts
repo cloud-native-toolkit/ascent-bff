@@ -29,6 +29,7 @@ import { Architectures, Bom, Controls } from '../models';
 import first from '../util/first';
 import { semanticVersionDescending, semanticVersionFromString } from '../util/semantic-version';
 import { S3 } from 'ibm-cos-sdk';
+import { resolve } from 'dns';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -390,6 +391,7 @@ export class ServicesHelper {
 
         // Lets build a BOM file from the BOM builder
         const iascableResult = await this.catalogBuilder.build(`file:/${process.cwd()}/.catalog.ignore.yaml`, bom);
+        console.log(`OK -> ${iascableResult.billOfMaterial.metadata.name}`);
 
         // Write into a Buffer
         // creating archives
@@ -406,9 +408,10 @@ export class ServicesHelper {
             function getContents(url: string) {
                 // eslint-disable-next-line @typescript-eslint/no-misused-promises, no-async-promise-executor
                 return new Promise<string>(async (resolve) => {
-                    const req: Superagent.Response = await Superagent.get(url);
-
-                    resolve(req.text);
+                    if (/^https:.+$/.test(url)) {
+                        const req: Superagent.Response = await Superagent.get(url);
+                        resolve(req.text);
+                    } else resolve('');
                 })
             };
             let contents: string | Buffer = "";
@@ -446,11 +449,11 @@ export class ServicesHelper {
             zip.addFile(iascableResult.graph.name, typeof graphContent === 'string' ? Buffer.alloc(graphContent.length, graphContent) : graphContent, "Dependency graph");
         }
 
-        // TODO: Output Apply script
+        // Output Apply script
         zip.addLocalFile(`${process.cwd()}/node_modules/@cloudnativetoolkit/iascable/scripts/apply.sh`, 'scripts');
-        // TODO: Output Destroy script
+        // Output Destroy script
         zip.addLocalFile(`${process.cwd()}/node_modules/@cloudnativetoolkit/iascable/scripts/destroy.sh`, 'scripts');
-        // TODO: Output Launch script
+        // Output Launch script
         zip.addLocalFile(`${process.cwd()}/node_modules/@cloudnativetoolkit/iascable/scripts/launch.sh`, 'scripts');
         
         // Add the Diagrams to the Zip Contents
