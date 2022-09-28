@@ -29,7 +29,6 @@ import { Architectures, Bom, Controls } from '../models';
 import first from '../util/first';
 import { semanticVersionDescending, semanticVersionFromString } from '../util/semantic-version';
 import { S3 } from 'ibm-cos-sdk';
-import { resolve } from 'dns';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable @typescript-eslint/no-explicit-any */
