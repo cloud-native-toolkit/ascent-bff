@@ -44,6 +44,7 @@ import {
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler, File} from '../types';
 
+import fetch from 'node-fetch';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const INSTANCE_ID = process.env.INSTANCE_ID;
@@ -122,6 +123,7 @@ export class SolutionController {
     const email:string = user?.email;
     let newSolution:Solution;
     try {
+      console.log(body.solution);
       if (email) newSolution = await this.userRepository.solutions(email).create(body.solution);
       else newSolution = await this.solutionRepository.create(body.solution);
     } catch (error:any) {
@@ -501,5 +503,50 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
       await this.solutionRepository.architectures(id).unlink(arch.arch_id);
     }
     await this.solutionRepository.deleteById(id);
+  }
+
+  @get('/solutions/{id}/automation/techzone')
+  @response(200, {
+    description: 'Download Terraform Package for solution',
+  })
+  @oas.response.file()
+  async downloadAutomationTechzone(
+      @param.path.string('id') id: string,
+      @inject(RestBindings.Http.RESPONSE) res: Response,
+  ) {
+
+    try {
+
+      // Create zip
+      const zip = await this.downloadAutomationZip(id, res);
+
+      if (!(zip instanceof Buffer)) {
+        throw Error("Invalid zip file")
+      }
+      const bifrostURL = process.env.BIFROST;
+      if (bifrostURL === undefined) {
+        throw Error("Bifrost URL is invalid.")
+      }
+      return fetch(bifrostURL, {
+        method: 'POST',
+        headers: {
+            'Access-Control-Allow-Origin': "*",
+            'Content-Type': 'application/zip',
+        },
+        body: zip.buffer
+      }).then((response) => { 
+          return response.text().then((data) => {
+              console.log(data);
+              return data;
+          }).catch((err) => {
+              console.log(err);
+          }) 
+      });
+
+    } catch (e:any) {
+      console.log(e);
+      return res.status(409).send(e?.message);
+    }
+
   }
 }

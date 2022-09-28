@@ -44,6 +44,11 @@ export class Solution extends Entity {
   })
   public?: boolean;
 
+  @property({
+    type: 'boolean',
+  })
+  techzone?: boolean;
+
   @hasMany(() => Architectures, {
     through: {
       model: () => SolutionArchitectures,
