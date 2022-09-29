@@ -123,7 +123,6 @@ export class SolutionController {
     const email:string = user?.email;
     let newSolution:Solution;
     try {
-      console.log(body.solution);
       if (email) newSolution = await this.userRepository.solutions(email).create(body.solution);
       else newSolution = await this.solutionRepository.create(body.solution);
     } catch (error:any) {
