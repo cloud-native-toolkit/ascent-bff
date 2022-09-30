@@ -79,6 +79,11 @@ spec:
                 configMapKeyRef:
                   name: ascent
                   key: instance-id
+            - name: BIFROST
+              valueFrom:
+                configMapKeyRef:
+                  name: ascent
+                  key: bifrost
             {{- if eq .Values.authentication.provider "appid" }}
             - name: APPID_OAUTH_SERVER_URL
               valueFrom:
