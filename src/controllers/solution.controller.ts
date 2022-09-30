@@ -526,22 +526,16 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
       if (bifrostURL === undefined) {
         throw Error("Bifrost URL is invalid.")
       }
-      return fetch(bifrostURL, {
+      const returnValue = await fetch(bifrostURL, {
         method: 'POST',
         headers: {
             'Access-Control-Allow-Origin': "*",
             'Content-Type': 'application/zip',
         },
         body: zip.buffer
-      }).then((response) => { 
-          return response.text().then((data) => {
-              console.log(data);
-              return data;
-          }).catch((err) => {
-              console.log(err);
-          }) 
-      });
-
+      })
+      const techZoneURL = await returnValue.text();
+      return techZoneURL;
     } catch (e:any) {
       console.log(e);
       return res.status(409).send(e?.message);
