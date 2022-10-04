@@ -44,7 +44,6 @@ import {
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler, File} from '../types';
 
-import fetch from 'node-fetch';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const INSTANCE_ID = process.env.INSTANCE_ID;
@@ -509,33 +508,17 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
     description: 'Download Terraform Package for solution',
   })
   @oas.response.file()
-  async downloadAutomationTechzone(
+  downloadAutomationTechzone(
       @param.path.string('id') id: string,
       @inject(RestBindings.Http.RESPONSE) res: Response,
   ) {
 
     try {
-
-      // Create zip
-      const zip = await this.downloadAutomationZip(id, res);
-
-      if (!(zip instanceof Buffer)) {
-        throw Error("Invalid zip file")
-      }
       const bifrostURL = process.env.BIFROST;
       if (bifrostURL === undefined) {
         throw Error("Bifrost URL is invalid.")
       }
-      const returnValue = await fetch(bifrostURL, {
-        method: 'POST',
-        headers: {
-            'Access-Control-Allow-Origin': "*",
-            'Content-Type': 'application/zip',
-        },
-        body: zip.buffer
-      })
-      const techZoneURL = await returnValue.text();
-      return techZoneURL;
+      return bifrostURL;
     } catch (e:any) {
       console.log(e);
       return res.status(409).send(e?.message);
