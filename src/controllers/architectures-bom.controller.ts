@@ -358,62 +358,6 @@ export class ArchitecturesBomController {
     return this.architecturesRepository.boms(id).create(bom);
   }
 
-  @get('/architectures/boms/details', {
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: {
-              type: 'object',
-            },
-          },
-        },
-        description: 'Enriched information about a bom',
-      },
-    },
-  })
-  async enrichBomYaml(
-    @requestBody.file()
-    request: Request,
-    @inject(RestBindings.Http.REQUEST) req: any,
-    @inject(RestBindings.Http.RESPONSE) res: Response,
-  ): Promise<object> {
-    return new Promise<object>((resolve, reject) => {
-      this.fileHandler(request, res,(err: unknown) => {
-          if (err) {
-            throw err;
-          } else {
-
-            const uploadedFiles = request.files;
-            const mapper = (f: globalThis.Express.Multer.File) => ({
-              mimetype: f.mimetype,
-              buffer: f.buffer,
-              size: f.size,
-              fieldname: f.fieldname,
-              name: f.originalname
-            });
-            let files: File[] = [];
-            if (Array.isArray(uploadedFiles)) {
-              files = uploadedFiles.map(mapper);
-            } else {
-              for (const filename in uploadedFiles) {
-                files.push(...uploadedFiles[filename].map(mapper));
-              }
-            }
-            // Check uploaded files
-            if (files.length < 1) throw {message: "You must upload at least 1 file."};
-            for (const file of files) {
-              if (file.mimetype !== "application/x-yaml" && file.mimetype !== "text/yaml" && !file.name.endsWith('.yaml')) throw {message: "You must only upload YAML files."};
-              if (file.size > 102400) throw {message: "Files must me <= 100Ko."};
-            }
-            this.serviceHelper.enrichBomYaml(files[0].buffer.toString())
-            .then(bomJson => resolve(res.status(200).send(bomJson)))
-            .catch(console.error);
-          }
-      });
-    });
-  }
-
   @post('/architectures/boms/import', {
     responses: {
       200: {

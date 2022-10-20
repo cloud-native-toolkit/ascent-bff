@@ -1,13 +1,12 @@
-
 export interface CatalogConfig {
-  url: string;
-  summaryUrl: string;
+  catalogUrls: string[];
+  moduleSummaryUrl: string;
   latestReleaseUrl: string
-}
+};
 
 const config: CatalogConfig = {
-  url: 'https://modules.cloudnativetoolkit.dev/index.yaml',
-  summaryUrl: 'https://modules.cloudnativetoolkit.dev/summary.yaml',
+  catalogUrls: ['https://cloud-native-toolkit.github.io/automation-solutions/index.yaml','https://modules.cloudnativetoolkit.dev/index.yaml'],
+  moduleSummaryUrl: 'https://modules.cloudnativetoolkit.dev/summary.yaml',
   latestReleaseUrl: 'https://api.github.com/repos/cloud-native-toolkit/iascable/releases/latest'
 };
 

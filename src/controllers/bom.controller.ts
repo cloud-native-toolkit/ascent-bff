@@ -146,6 +146,14 @@ export class BomController {
     return this.bomRepository.find(filter);
   }
 
+  @get('/boms/catalog')
+  @response(200, {
+    description: 'Bom Catalog',
+  })
+  async findCatalog(): Promise<any> {
+    return this.serviceHelper.getBomsCatalog();
+  }
+
   @patch('/boms')
   @response(200, {
     description: 'Bom PATCH success count',
