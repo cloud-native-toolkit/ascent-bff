@@ -383,7 +383,7 @@ export class ServicesHelper {
             {flatten: false}
         );
       
-        // await bundleWriter.generate(`${process.cwd()}/.result.ignore.zip`);
+        await bundleWriter.generate(`${process.cwd()}/.result.ignore.zip`);
         
         return fs.readFileSync(`${process.cwd()}/.result.ignore.zip`);
     }
