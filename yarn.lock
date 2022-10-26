@@ -244,10 +244,10 @@
     "@babel/helper-validator-identifier" "^7.18.6"
     to-fast-properties "^2.0.0"
 
-"@cloudnativetoolkit/iascable@3.0.0-beta.4":
-  version "3.0.0-beta.4"
-  resolved "https://registry.yarnpkg.com/@cloudnativetoolkit/iascable/-/iascable-3.0.0-beta.4.tgz#21a8a135df44fc0f557fa3a0bfb339ca3e74d04e"
-  integrity sha512-eb3qbCYCX4Ce0MYq3Red4N6cR5Bf+HaWPCHugcgAmX0+X56+4cp5rwe4THwnlcsfxpKxrbw9oCDl2819XuuTkQ==
+"@cloudnativetoolkit/iascable@3.0.0-beta.7":
+  version "3.0.0-beta.7"
+  resolved "https://registry.yarnpkg.com/@cloudnativetoolkit/iascable/-/iascable-3.0.0-beta.7.tgz#0ee66adc801142d93a95626e33ad185fd3b53108"
+  integrity sha512-w6eQxxLQUf9Mmc+Qh97SYQsdLeWIdqUbyQoXHAE5IE53WK83KAtEjXdBGHxWDbr53muGM601c2k1oUziZC1QDw==
   dependencies:
     ajv-cli "^5.0.0"
     compare-versions "^3.6.0"
@@ -261,7 +261,6 @@
     lodash.uniq "^4.5.0"
     lodash.uniqby "^4.7.0"
     lodash.uniqwith "^4.5.0"
-    memory-stream "^1.0.0"
     rxjs "^7.5.7"
     simple-git "^3.14.1"
     superagent "^6.1.0"
@@ -5329,13 +5328,6 @@ memory-pager@^1.0.2:
   resolved "https://registry.yarnpkg.com/memory-pager/-/memory-pager-1.5.0.tgz#d8751655d22d384682741c972f2c3d6dfa3e66b5"
   integrity sha512-ZS4Bp4r/Zoeq6+NLJpP+0Zzm0pR8whtGPf1XExKLJBAczGMnSi3It14OiNCStjQjM6NU1okjQGSxgEZN8eBYKg==
 
-memory-stream@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/memory-stream/-/memory-stream-1.0.0.tgz#481dfd259ccdf57b03ec2c9632960044180e73c2"
-  integrity sha512-Wm13VcsPIMdG96dzILfij09PvuS3APtcKNh7M28FsCA/w6+1mjR7hhPmfFNoilX9xU7wTdhsH5lJAm6XNzdtww==
-  dependencies:
-    readable-stream "^3.4.0"
-
 merge-descriptors@1.0.1, merge-descriptors@~1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/merge-descriptors/-/merge-descriptors-1.0.1.tgz#b00aaa556dd8b44568150ec9d1b953f3f90cbb61"
@@ -6810,7 +6802,7 @@ readable-stream@^2.0.6, readable-stream@^2.2.2, readable-stream@^2.3.5, readable
     string_decoder "~1.1.1"
     util-deprecate "~1.0.1"
 
-readable-stream@^3.4.0, readable-stream@^3.6.0:
+readable-stream@^3.6.0:
   version "3.6.0"
   resolved "https://registry.yarnpkg.com/readable-stream/-/readable-stream-3.6.0.tgz#337bbda3adc0706bd3e024426a286d4b4b2c9198"
   integrity sha512-BViHy7LKeTz4oNnkcLJ+lVSL6vpiFeX6/d3oSH8zCW7UxP2onchk+vTGB143xuFjHS3deTgkKoXXymXqymiIdA==

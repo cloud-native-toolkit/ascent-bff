@@ -38,7 +38,7 @@ import {
 } from '../repositories';
 import { BomController } from '.';
 
-import catalogConfig from '../config/catalog.config'
+import catalogConfig from '../config/automation-catalog.config';
 
 import fetch from 'node-fetch';
 import AdmZip = require("adm-zip");

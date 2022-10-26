@@ -24,16 +24,15 @@ import { S3 } from 'ibm-cos-sdk';
 
 import { semanticVersionDescending, semanticVersionFromString } from '../util/semantic-version';
 import { Architectures, Bom, Controls } from '../models';
-import catalogConfig from '../config/catalog.config'
+import catalogConfig from '../config/automation-catalog.config'
 import first from '../util/first';
-import { BundleWriter, BundleWriterType, getBundleWriter } from '@cloudnativetoolkit/iascable/dist/types/util/bundle-writer';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-throw-literal */
 
 const MODULES_KEY = 'automation-modules';
-const BOMS_KEY = 'automation-boms'
+const CATALOG_TIMEOUT_HOURS = 2;
 
 export interface BomModule {
     name?: string;
@@ -147,11 +146,11 @@ export class ServicesHelper {
                         this.client.set('automation-catalog', JSON.stringify(catalog))
                             .finally(() => console.log(`Automation Catalog stored in cache`));
                         const timeout = new Date();
-                        timeout.setHours(timeout.getHours() + 2);
+                        timeout.setHours(timeout.getHours() + CATALOG_TIMEOUT_HOURS);
                         this.client.set(`automation-catalog-timeout`, Number(timeout).toString())
                             .finally(() => console.log(`Automation Catalog timeout stored in cache: ${timeout}`));
                     }
-                    fs.writeFileSync(`${process.cwd()}/.automation-catalog.ignore.yaml`, catalog);
+                    fs.writeFileSync(`${process.cwd()}/.automation-catalog.ignore.yaml`,  JSON.stringify(catalog));
                     this.catalog = new Catalog(catalog);
                     return resolve(this.catalog);
                 })
@@ -378,12 +377,12 @@ export class ServicesHelper {
         const iascableBundle = await this.catalogBuilder.buildBomsFromCatalog(catalog, [bom]);
         console.log(`OK`);
 
-        const bundleWriter: BundleWriter = iascableBundle.writeBundle(
-            getBundleWriter(BundleWriterType.zip),
-            {flatten: false}
-        );
+        // const bundleWriter: BundleWriter = iascableBundle.writeBundle(
+        //     getBundleWriter(BundleWriterType.zip),
+        //     {flatten: false}
+        // );
       
-        await bundleWriter.generate(`${process.cwd()}/.result.ignore.zip`);
+        // await bundleWriter.generate(`${process.cwd()}/.result.ignore.zip`);
         
         return fs.readFileSync(`${process.cwd()}/.result.ignore.zip`);
     }
