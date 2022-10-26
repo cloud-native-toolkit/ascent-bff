@@ -12,6 +12,9 @@ import {
     ModuleSelector,
     BillOfMaterialEntry,
     isBillOfMaterialModel,
+    IascableApi,
+    // BundleWriterType,
+    // getBundleWriter
 } from '@cloudnativetoolkit/iascable';
 
 import {
@@ -126,6 +129,7 @@ export class ServicesHelper {
     @Inject loader!: CatalogLoader;
     @Inject moduleSelector!: ModuleSelector;
     @Inject catalogBuilder!: CatalogBuilder;
+    @Inject iascableApi!: IascableApi;
     client: WrappedNodeRedisClient;
     catalog: Catalog;
 
@@ -377,12 +381,7 @@ export class ServicesHelper {
         const iascableBundle = await this.catalogBuilder.buildBomsFromCatalog(catalog, [bom]);
         console.log(`OK`);
 
-        // const bundleWriter: BundleWriter = iascableBundle.writeBundle(
-        //     getBundleWriter(BundleWriterType.zip),
-        //     {flatten: false}
-        // );
-      
-        // await bundleWriter.generate(`${process.cwd()}/.result.ignore.zip`);
+        // await iascableBundle.writeBundle(getBundleWriter(BundleWriterType.zip)).generate(`${process.cwd()}/.result.ignore.zip`);
         
         return fs.readFileSync(`${process.cwd()}/.result.ignore.zip`);
     }
