@@ -57,6 +57,15 @@ export class AutomationCatalogController {
     return this.serviceHelper.getCatalog();
   }
 
+  @get('/automation/catalog/boms')
+  async getBomsCatalog(): Promise<object> {
+    const catalog = JSON.parse(JSON.stringify(await this.serviceHelper.getCatalog()));
+    delete catalog.modules;
+    delete catalog.moduleIdAliases;
+    delete catalog.flattenedAliases;
+    return catalog;
+  }
+
   @get('/automation/ids')
   @response(200, {
     description: 'Get a List of Catalog IDs'
