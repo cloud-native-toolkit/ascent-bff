@@ -12,8 +12,9 @@
   "engines": {
     "node": ">=10.16"
   },
+
   "scripts": {
-    "build": "lb-tsc",
+    "compile": "lb-tsc",
     "build:watch": "lb-tsc --watch",
     "lint": "npm run eslint",
     "lint:fix": "npm run eslint:fix && npm run prettier:fix",
@@ -25,7 +26,7 @@
     "pretest": "npm run rebuild",
     "test": "NODE_ENV=test lb-mocha --allow-console-logs \"dist/__tests__\"",
     "posttest": "npm run lint",
-    "test:dev": "lb-mocha --allow-console-logs dist/__tests__/**/*.js",
+    "unit-test": "lb-mocha --allow-console-logs dist/__tests__/**/*.js",
     "docker:build": "docker build -t architecture-mapper-bff .",
     "docker:run": "docker run -p 3001:3001 -d architecture-mapper-bff",
     "premigrate": "npm run build",
@@ -38,7 +39,9 @@
     "start": "NODE_ENV=staging node .",
     "start:dev": "NODE_ENV=dev node .",
     "clean": "lb-clean dist *.tsbuildinfo .eslintcache",
-    "serve": "NODE_ENV=staging node ."
+    "serve": "NODE_ENV=staging node .",
+    "package": "npm run build",
+    "scan" : "detect-secrets scan --update .secrets.baseline --exclude-files 'package-lock.json'"
   },
   "repository": {
     "type": "git",
