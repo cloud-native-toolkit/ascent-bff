@@ -3,18 +3,10 @@ import { Inject } from 'typescript-ioc';
 import fs from "fs";
 
 import {
-    CatalogBuilder,
-    billOfMaterialFromYaml,
-    BillOfMaterialModule,
-    Catalog,
-    CatalogCategoryModel,
-    CatalogLoader,
-    ModuleSelector,
-    BillOfMaterialEntry,
-    isBillOfMaterialModel,
-    IascableApi,
-    // BundleWriterType,
-    // getBundleWriter
+    billOfMaterialFromYaml, isBillOfMaterialModel,
+    BillOfMaterialModule, BillOfMaterialEntry,
+    Catalog, CatalogCategoryModel, CatalogLoader, ModuleSelector,
+    CatalogBuilder, BundleWriterType, getBundleWriter
 } from '@cloudnativetoolkit/iascable';
 
 import {
@@ -126,10 +118,9 @@ const servicesFromCatalog = (catalog: Catalog) => {
 }
 
 export class ServicesHelper {
-    @Inject loader!: CatalogLoader;
+    @Inject catalogLoader!: CatalogLoader;
     @Inject moduleSelector!: ModuleSelector;
     @Inject catalogBuilder!: CatalogBuilder;
-    @Inject iascableApi!: IascableApi;
     client: WrappedNodeRedisClient;
     catalog: Catalog;
 
@@ -143,7 +134,7 @@ export class ServicesHelper {
      */
     private fetchCatalog(): Promise<Catalog> {
         return new Promise((resolve, reject) => {
-            this.loader.loadCatalogYaml(catalogConfig.catalogUrls)
+            this.catalogLoader.loadCatalog(catalogConfig.catalogUrls)
                 .then(catalog => {
                     console.log(`Automation Catalog fetched from ${catalogConfig.catalogUrls.join(', ')}`);
                     if (this.client) {
@@ -184,8 +175,7 @@ export class ServicesHelper {
                                         .then(catalog => {
                                             if (catalog) {
                                                 console.log(`Automation Catalog retrieved from cache`);
-                                                this.catalog = new Catalog(this.loader.parseYaml(catalog));
-                                                resolve(this.catalog);
+                                                resolve(this.catalogLoader.loadCatalog(`file:/${process.cwd()}/.automation-catalog.ignore.yaml`));
                                             } else {
                                                 resolve(this.fetchCatalog());
                                             }
@@ -350,7 +340,7 @@ export class ServicesHelper {
     async validateBomModuleYaml(yamlString: string, moduleRef: string): Promise<void> {
         try {
             const catalog = await this.getCatalog();
-            await this.moduleSelector.validateBillOfMaterialModuleConfigYaml(catalog, moduleRef, yamlString);
+            //await this.moduleSelector.validateBillOfMaterialModuleConfigYaml(catalog, moduleRef, yamlString);
         } catch (error) {
             throw { message: `Module ${moduleRef} yaml config validation failed.`, details: error };
         }
@@ -379,9 +369,7 @@ export class ServicesHelper {
         // Lets build a BOM file from the BOM builder
         
         const iascableBundle = await this.catalogBuilder.buildBomsFromCatalog(catalog, [bom]);
-        console.log(`OK`);
-
-        // await iascableBundle.writeBundle(getBundleWriter(BundleWriterType.zip)).generate(`${process.cwd()}/.result.ignore.zip`);
+        await iascableBundle.writeBundle(getBundleWriter(BundleWriterType.zip)).generate(`${process.cwd()}/.result.ignore.zip`);
         
         return fs.readFileSync(`${process.cwd()}/.result.ignore.zip`);
     }
