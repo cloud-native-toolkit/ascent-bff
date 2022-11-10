@@ -460,7 +460,7 @@ export class ServicesHelper {
         if (architecture.arch_id) {
             if (drawio) zip.addFile(`${architecture.arch_id}.drawio`, Buffer.alloc(drawio.toString().length, drawio.toString()), `Architecture diagram ${architecture.arch_id} .drawio file`);
             if (png) {
-                fs.writeFileSync(`/tmp/${architecture.arch_id}.png`, png);
+                fs.writeFileSync(`/tmp/${architecture.arch_id}.png`, png as string);
                 zip.addLocalFile(`/tmp/${architecture.arch_id}.png`);
             }
         }

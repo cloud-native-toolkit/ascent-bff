@@ -1,7 +1,6 @@
 import {Inject} from 'typescript-ioc';
 import {
   Count,
-  CountSchema,
   Filter,
   FilterExcludingWhere,
   repository,
@@ -16,7 +15,6 @@ import {
   patch,
   del,
   requestBody,
-  response,
   Response,
   RestBindings
 } from '@loopback/rest';
@@ -90,10 +88,6 @@ export class BomController {
   }
 
   @post('/boms')
-  @response(200, {
-    description: 'Bom model instance',
-    content: {'application/json': {schema: getModelSchemaRef(Bom)}},
-  })
   async create(
     @requestBody({
       content: {
@@ -118,10 +112,6 @@ export class BomController {
   }
 
   @get('/boms/count')
-  @response(200, {
-    description: 'Bom model count',
-    content: {'application/json': {schema: CountSchema}},
-  })
   async count(
     @param.where(Bom) where?: Where<Bom>,
   ): Promise<Count> {
@@ -129,17 +119,6 @@ export class BomController {
   }
 
   @get('/boms')
-  @response(200, {
-    description: 'Array of Bom model instances',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(Bom, {includeRelations: true}),
-        },
-      },
-    },
-  })
   async find(
     @param.filter(Bom) filter?: Filter<Bom>,
   ): Promise<Bom[]> {
@@ -147,10 +126,6 @@ export class BomController {
   }
 
   @patch('/boms')
-  @response(200, {
-    description: 'Bom PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
-  })
   async updateAll(
     @requestBody({
       content: {
@@ -172,14 +147,6 @@ export class BomController {
   }
 
   @get('/boms/{id}')
-  @response(200, {
-    description: 'Bom model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(Bom, {includeRelations: true}),
-      },
-    },
-  })
   async findById(
     @param.path.string('id') id: string,
     @param.filter(Bom, {exclude: 'where'}) filter?: FilterExcludingWhere<Bom>
@@ -188,13 +155,6 @@ export class BomController {
   }
 
   @get('/boms/{id}/composite')
-  @response(200, {
-    description: 'composit API with service + catalog',
-    content: {
-      'application/json': {        
-      },
-    },
-  })
   async findCompositeById(
     @param.path.string('id') id: string,
     @param.filter(Bom, {exclude: 'where'}) filter?: FilterExcludingWhere<Bom>
@@ -222,14 +182,6 @@ export class BomController {
   }
 
   @patch('/boms/{id}')
-  @response(200, {
-    description: 'Controls model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(Bom),
-      },
-    },
-  })
   async updateById(
     @param.path.string('id') id: string,
     @requestBody({
@@ -251,22 +203,11 @@ export class BomController {
   }
 
   @del('/boms/{id}')
-  @response(204, {
-    description: 'Bom DELETE success',
-  })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.bomRepository.deleteById(id);
   }
 
   @get('/boms/catalog/{bomId}')
-  @response(200, {
-    description: 'Bom model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(Bom, {includeRelations: true}),
-      },
-    },
-  })
   async compositeCatalogById(
     @param.path.string('bomId') bomId: string,
     @param.filter(Bom, {exclude: 'where'}) filter?: FilterExcludingWhere<Bom>
@@ -283,13 +224,6 @@ export class BomController {
   }
 
   @get('/boms/services/{archid}')
-  @response(200, {
-    description: 'composit APi with bom + services + catalog',
-    content: {
-      'application/json': {        
-      },
-    },
-  })
   async compositeCatalogByArchId(
     @param.path.string('archid') archid: string,    
   ): Promise<BomComposite[]> {    

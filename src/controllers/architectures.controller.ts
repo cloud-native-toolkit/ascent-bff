@@ -85,9 +85,9 @@ export class ArchitecturesController {
       signatureVersion: 'iam',
     };
 
-    this.cos = new Storage.S3(config);
+    if (process.env.NODE_ENV !== 'test') this.cos = new Storage.S3(config);
     this.bucketName = `ascent-storage-${INSTANCE_ID}`;
-    this.cos.listBuckets().promise()
+    if (this.cos) this.cos.listBuckets().promise()
       .then(data => {
         if (!data?.Buckets?.find(bucket => bucket.Name === this.bucketName)) {
           this.cos.createBucket({
@@ -111,7 +111,7 @@ export class ArchitecturesController {
 
   public async getDiagram(arch_id: string, diagramType: DiagramType, small=false): Promise<Storage.S3.Body> {
     return new Promise((resolve, reject) => {
-      this.cos.getObject({
+      if (this.cos) this.cos.getObject({
         Bucket: this.bucketName,
         Key: `diagrams/${diagramType}/${small ? "small-" : ""}${arch_id}-diagram.${diagramType}`
       }).promise()
@@ -159,6 +159,7 @@ export class ArchitecturesController {
           details: e
           }});
       });
+      else resolve('')
     });
   }
 
@@ -219,7 +220,7 @@ export class ArchitecturesController {
       let fileIx = 0;
       const errors:object[] = [];
       for (const file of files) {
-        this.cos.putObject({
+        if (this.cos) this.cos.putObject({
           Bucket: this.bucketName,
           Key: `diagrams/${file.fieldname}/${(file.name === "png-small") ? "small-" : ""}${arch_id}-diagram.${file.fieldname}`,
           Body: file.buffer
@@ -232,6 +233,7 @@ export class ArchitecturesController {
             return resolve({});
           }
         });
+        else resolve({});
       }
     });
   }
@@ -498,7 +500,7 @@ export class ArchitecturesController {
       await this.architecturesRepository.boms(archDetails.arch_id).create(bom);
     }
     // Duplicate architecture diagrams
-    try {
+    if (this.cos) try {
       const diagramPng = await this.cos.getObject({
         Bucket: this.bucketName,
         Key: `diagrams/png/${arch_id}-diagram.png`
@@ -511,7 +513,7 @@ export class ArchitecturesController {
     } catch (error) {
       console.log(`Error duplicating ${arch_id} PNG diagram: `, error);
     }
-    try {
+    if (this.cos) try {
       const diagramPngSmall = await this.cos.getObject({
         Bucket: this.bucketName,
         Key: `diagrams/png/small-${arch_id}-diagram.png`
@@ -524,7 +526,7 @@ export class ArchitecturesController {
     } catch (error) {
       console.log(`Error duplicating ${arch_id} small PNG diagram: `, error);
     }
-    try {
+    if (this.cos) try {
       const diagramDrawio = await this.cos.getObject({
         Bucket: this.bucketName,
         Key: `diagrams/drawio/${arch_id}-diagram.drawio`
