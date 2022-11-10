@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ascent-bff-test
+data:
+  .env: |
+    #PORT=DEFINED BY CIRRUS RUNTIME
+    #HOSTNAME=DEFINED BY CIRRUS RUNTIME
+    INSTANCE_ID=6a03304a7da7e474
+    BIFROST=https://bifrost-api.wdc1a.ciocloud.nonprod.intranet.ibm.com
