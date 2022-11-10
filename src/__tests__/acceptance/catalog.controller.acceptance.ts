@@ -1,9 +1,9 @@
 /*import { Client } from '@loopback/testlab';
-import { ArchitectureMapperBffApplication } from '../..';
+import { AscentBffApplication } from '../..';
 import { setupApplication } from './test-helper';
 
 describe('Catalog', () => {
-  let app: ArchitectureMapperBffApplication;
+  let app: AscentBffApplication;
   //let client: Client;
 
   before('setupApplication', async () => {

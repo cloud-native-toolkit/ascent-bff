@@ -1,7 +1,9 @@
-initDatabase.js
-updateServices.js
-dist
-express-app
+node_modules/
+dist/
+coverage/
+.eslintrc.js
 
-*.ignore.js
-scripts/*.js
+build/
+express-app/
+scripts/
+data/

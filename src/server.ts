@@ -4,7 +4,7 @@ import express from 'express';
 import http from 'http';
 import {AddressInfo} from 'net';
 import * as path from 'path';
-import {ArchitectureMapperBffApplication} from './application';
+import {AscentBffApplication} from './application';
 
 export {ApplicationConfig};
 
@@ -16,7 +16,7 @@ export {ApplicationConfig};
  */
 export class ExpressServer {
   public expressServer: express.Application;
-  public readonly lbApp: ArchitectureMapperBffApplication;
+  public readonly lbApp: AscentBffApplication;
   private server?: http.Server;
   public url: String;
 
@@ -24,7 +24,7 @@ export class ExpressServer {
     // Express Web App
     this.expressServer = require('../express-app/express-server');
     // LB4 App
-    this.lbApp = new ArchitectureMapperBffApplication(options);
+    this.lbApp = new AscentBffApplication(options);
 
     // Serve static files in the public folder
     this.expressServer.use(express.static(path.join(__dirname, '../public')));

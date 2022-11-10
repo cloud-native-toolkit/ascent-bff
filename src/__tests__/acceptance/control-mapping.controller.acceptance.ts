@@ -1,11 +1,11 @@
-import { Client, expect } from '@loopback/testlab';
-import { ArchitectureMapperBffApplication } from '../..';
+import { Client } from '@loopback/testlab';
+import { AscentBffApplication } from '../..';
 import { setupApplication } from './test-helper';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 
-describe('Control Nist', () => {
-  let app: ArchitectureMapperBffApplication;
+describe('Control Mapping', () => {
+  let app: AscentBffApplication;
   let client: Client;
 
   before('setupApplication', async () => {
@@ -38,31 +38,6 @@ describe('Control Nist', () => {
       .get('/controls/AC-3 (2)/services')
       .expect(200)
       .expect('Content-Type', /application\/json/);
-  });
-
-  it('POST a control mapping', async () => {
-    await client
-      .post('/control-mapping').send({
-        "control_id": "SI-11",
-        "arch_id": "simple",
-        "compliant": "UNKNOWN",
-        "configuration": "string",
-        "evidence": "string",
-        "desc": "string",
-        "comment": "string"
-      })
-      .expect(200)
-      .expect('Content-Type', /application\/json/);
-  });
-
-  it('GET architectures impacted by a control', async () => {
-    await client
-      .get('/controls/SI-11/architectures')
-      .expect(200)
-      .expect('Content-Type', /application\/json/)
-      .then((res) => {
-        expect(res.body.length).to.equal(1);
-      });
   });
 
   it('DELETE a control mapping', async () => {

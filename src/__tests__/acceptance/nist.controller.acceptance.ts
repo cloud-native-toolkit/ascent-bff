@@ -1,9 +1,9 @@
 import { Client } from '@loopback/testlab';
-import { ArchitectureMapperBffApplication } from '../..';
+import { AscentBffApplication } from '../..';
 import { setupApplication } from './test-helper';
 
 describe('Nists', () => {
-  let app: ArchitectureMapperBffApplication;
+  let app: AscentBffApplication;
   let client: Client;
 
   before('setupApplication', async () => {
@@ -25,13 +25,6 @@ describe('Nists', () => {
   it('GET all nist', async () => {
     await client
       .get('/nist')
-      .expect(200)
-      .expect('Content-Type', /application\/json/);
-  });
-
-  it('GET nist by id', async () => {
-    await client
-      .get('/nist/SC-12')
       .expect(200)
       .expect('Content-Type', /application\/json/);
   });
