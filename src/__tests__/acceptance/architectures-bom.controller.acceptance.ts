@@ -10,10 +10,9 @@ describe('Architecture Bom', () => {
   const testArchId= 'arch01';
   const testBomId= 'test_service';
 
-  before('setupApplication', async function(this, done) {
+  before('setupApplication', async function(this) {
     this.timeout(5000);
     ({ app, client } = await setupApplication());
-    done();
   });
 
   after(async () => {
