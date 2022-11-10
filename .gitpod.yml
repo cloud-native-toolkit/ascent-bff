@@ -1,0 +1,3 @@
+tasks:
+  - init: sudo apt install redis-server -y && yarn install
+    command: sudo service redis-server start && yarn start:dev

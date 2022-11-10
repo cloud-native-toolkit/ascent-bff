@@ -5,6 +5,7 @@ import AdmZip = require("adm-zip");
 import fs from "fs";
 
 import {
+    CatalogBuilder,
     billOfMaterialFromYaml,
     BillOfMaterialModel,
     BillOfMaterialModule,
@@ -13,9 +14,6 @@ import {
     CatalogLoader,
     ModuleSelector,
     OutputFile,
-    OutputFileType,
-    CatalogBuilder,
-    UrlFile
 } from '@cloudnativetoolkit/iascable';
 
 import {
@@ -392,53 +390,29 @@ export class ServicesHelper {
 
         // Lets build a BOM file from the BOM builder
         const iascableResult = await this.catalogBuilder.build(`file:/${process.cwd()}/.catalog.ignore.yaml`, bom);
-        const bomContents: string = yaml.dump(iascableResult.billOfMaterial);
+        console.log(`OK -> ${iascableResult.billOfMaterial.metadata.name}`);
 
         // Write into a Buffer
         // creating archives
         const zip = new AdmZip();
 
-        if (bomContents) {
-            zip.addFile("bom.yaml", Buffer.alloc(bomContents.length, bomContents), "BOM Yaml contents");
+        // Output BOM
+        if (iascableResult.billOfMaterial) {
+            const bomStr = yaml.dump(iascableResult.billOfMaterial);
+            zip.addFile("bom.yaml", Buffer.alloc(bomStr.length, bomStr), "BOM yaml content");
         }
 
-        // Add the Diagrams to the Zip Contents
-        // Add the Diagrams from the Architectures
-        if (architecture.arch_id) {
-            if (drawio) zip.addFile(`${architecture.arch_id}.drawio`, Buffer.alloc(drawio.toString().length, drawio.toString()), `Architecture diagram ${architecture.arch_id} .drawio file`);
-            if (png) {
-                fs.writeFileSync(`/tmp/${architecture.arch_id}.png`, png);
-                zip.addLocalFile(`/tmp/${architecture.arch_id}.png`);
-            }
-        }
-
-        let mdfiles = "";
-        iascableResult.terraformComponent.files.map(async (file: OutputFile) => {
-            if (file.type === "documentation") {
-                mdfiles += "- [" + file.name + "](" + file.name + ")\n";
-            }
-        });
-
-        zip.addLocalFolder('./public/utils', 'utils');
-        zip.addLocalFile('./public/credentials.template')
-        zip.addLocalFile('./public/launch.sh')
-
-        // Load the Core ReadME
-        const readme = new UrlFile({ name: 'README.MD', type: OutputFileType.documentation, url: "https://raw.githubusercontent.com/ibm-gsi-ecosystem/ibm-enterprise-catalog-tiles/main/BUILD.MD" });
-        const newFiles = iascableResult.terraformComponent.files;
-        newFiles.push(readme);
-
-        await Promise.all(newFiles.map(async (file: OutputFile) => {
-
+        // Output Terraform Components
+        await Promise.all(iascableResult.terraformComponent.files.map(async (file: OutputFile) => {
             function getContents(url: string) {
                 // eslint-disable-next-line @typescript-eslint/no-misused-promises, no-async-promise-executor
                 return new Promise<string>(async (resolve) => {
-                    const req: Superagent.Response = await Superagent.get(url);
-
-                    resolve(req.text);
+                    if (/^https:.+$/.test(url)) {
+                        const req: Superagent.Response = await Superagent.get(url);
+                        resolve(req.text);
+                    } else resolve('');
                 })
             };
-
             let contents: string | Buffer = "";
             //console.log(file.name);
             if (file.name.endsWith('.tfvars')) file.name = `terraform/${file.name.replace('terraform', `${bom.metadata.name}.auto`)}`;
@@ -446,18 +420,6 @@ export class ServicesHelper {
             if (file.type === "documentation") {
                 try {
                     contents = await getContents((file as any).url);
-
-                    // Replace Variables and add
-                    if (file.name === "README.MD") {
-                        // configure details of the reference architecture
-                        contents = contents.replace(new RegExp("{name}", "g"), architecture.name);
-                        contents = contents.replace(new RegExp("{short_desc}", "g"), architecture.short_desc);
-                        //contents = contents.replace(new RegExp("{long_desc}", "g"), architecture.long_desc);
-                        contents = contents.replace(new RegExp("{diagram}", "g"), `${architecture.arch_id}.png`);
-                        contents = contents.replace(new RegExp("{modules}", "g"), mdfiles);
-
-                    }
-
                 } catch (e) {
                     console.log("failed to load contents from ", file.name);
                 }
@@ -468,18 +430,42 @@ export class ServicesHelper {
                     console.log("failed to load contents from ", file.name);
                 }
             }
-            //console.log(file.name);
-
             // Load Contents into the Zip
             if (contents !== "") {
                 zip.addFile(file.name, Buffer.alloc(contents.length, contents), "entry comment goes here");
             }
-
         }));
 
-        // Add a Markdown file that has links to the Docs
-        return zip.toBuffer()
+        // Output Tile
+        if (iascableResult.tile) {
+            const tileContent = await iascableResult.tile.file.contents;
+            zip.addFile(iascableResult.tile.file.name, typeof tileContent === 'string' ? Buffer.alloc(tileContent.length, tileContent) : tileContent, "Tile content");
+        }
 
+        // Output Dependency Graph
+        if (iascableResult.graph) {
+            const graphContent = await iascableResult.graph.contents;
+            zip.addFile(iascableResult.graph.name, typeof graphContent === 'string' ? Buffer.alloc(graphContent.length, graphContent) : graphContent, "Dependency graph");
+        }
+
+        // Output Apply script
+        zip.addLocalFile(`${process.cwd()}/node_modules/@cloudnativetoolkit/iascable/scripts/apply.sh`, 'scripts');
+        // Output Destroy script
+        zip.addLocalFile(`${process.cwd()}/node_modules/@cloudnativetoolkit/iascable/scripts/destroy.sh`, 'scripts');
+        // Output Launch script
+        zip.addLocalFile(`${process.cwd()}/node_modules/@cloudnativetoolkit/iascable/scripts/launch.sh`, 'scripts');
+        
+        // Add the Diagrams to the Zip Contents
+        // Add the Diagrams from the Architectures
+        if (architecture.arch_id) {
+            if (drawio) zip.addFile(`${architecture.arch_id}.drawio`, Buffer.alloc(drawio.toString().length, drawio.toString()), `Architecture diagram ${architecture.arch_id} .drawio file`);
+            if (png) {
+                fs.writeFileSync(`/tmp/${architecture.arch_id}.png`, png as string);
+                zip.addLocalFile(`/tmp/${architecture.arch_id}.png`);
+            }
+        }
+
+        return zip.toBuffer()
     }
 
     /**

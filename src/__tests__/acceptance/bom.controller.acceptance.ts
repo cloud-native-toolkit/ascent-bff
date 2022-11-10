@@ -1,11 +1,11 @@
 import { Client, expect } from '@loopback/testlab';
-import { ArchitectureMapperBffApplication } from '../..';
+import { AscentBffApplication } from '../..';
 import { setupApplication } from './test-helper';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 
 describe('Bom', () => {
-  let app: ArchitectureMapperBffApplication;
+  let app: AscentBffApplication;
   let client: Client;
   const testBom = 'argocd'
   let testBomId = '000'

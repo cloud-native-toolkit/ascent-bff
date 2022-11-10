@@ -17,7 +17,6 @@ import {
   post,
   requestBody,
   Request,
-  response,
   Response,
   oas,
   RestBindings
@@ -40,7 +39,6 @@ import { BomController } from '.';
 
 import catalogConfig from '../config/catalog.config'
 
-import fetch from 'node-fetch';
 import AdmZip = require("adm-zip");
 
 import {FILE_UPLOAD_SERVICE} from '../keys';
@@ -53,6 +51,7 @@ import Jimp from "jimp";
 import fs from "fs";
 
 import { ArchitecturesController, DiagramType } from './architectures.controller'
+import axios from 'axios';
 
 const latestReleaseUrl = catalogConfig.latestReleaseUrl;
 
@@ -140,9 +139,6 @@ export class ArchitecturesBomController {
   }
 
   @get('/architectures/{archid}/compliance-report')
-  @response(200, {
-    description: 'Download PDF compliance report based on the reference architecture BOM',
-  })
   @oas.response.file()
   async downloadComplianceReport(
     @param.path.string('archid') archId: string,
@@ -182,7 +178,7 @@ export class ArchitecturesBomController {
     if (arch.arch_id) {
       try {
         const diagram = await this.archController.getDiagram(arch.arch_id, DiagramType.PNG);
-        fs.writeFileSync('/tmp/arch.png', diagram);
+        fs.writeFileSync('/tmp/arch.png', diagram as string);
         const image = await Jimp.read('/tmp/arch.png');
         doc.image(new Image(await image.getBufferAsync(Jimp.MIME_JPEG)), { width: 750, align: 'center' });
       } catch (error) {
@@ -260,7 +256,7 @@ export class ArchitecturesBomController {
           header.cell('SCC Goal');
           header.cell('Goal Description');
           for (const mp of serviceMappings) {
-            for (const goal of mp?.goals) {
+            if(mp?.goals) for (const goal of mp.goals) {
               const row = table.row();
               if (mp.control_id && mp?.control?.id) row.cell(mp?.control?.id, {
                 goTo: mp.control_id,
@@ -489,7 +485,7 @@ export class ArchitecturesBomController {
     @inject(RestBindings.Http.RESPONSE) res: Response,
   ): Promise<object|void> {
     // Get latest iascable release 
-    const release = await (await fetch(latestReleaseUrl)).json();
+    const release = (await axios(latestReleaseUrl)).data;
     try {
       const curRelease = await this.automationReleaseRepository.findById('current');
       if (curRelease.tagName === release.tag_name) return res.status(400).send({
@@ -500,7 +496,7 @@ export class ArchitecturesBomController {
     }
     
     // Get latest release ZIP archive
-    const zip = new AdmZip(await (await fetch(release.zipball_url)).buffer());
+    const zip = new AdmZip((await axios(release.zipball_url)).data);
     const zipEntries = zip.getEntries();
     const success:Architectures[] = [];
     for (const zipEntry of zipEntries) {
