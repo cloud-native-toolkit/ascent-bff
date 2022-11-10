@@ -29,7 +29,7 @@ describe('Architecture Bom', () => {
       .then((res) => {
         expect(res.body).to.containEql({'service_id': testBomId});
       });
-  });
+  }).timeout(5000);
 
   it('GET a bom from reference architecture id', async () => {
     await client
