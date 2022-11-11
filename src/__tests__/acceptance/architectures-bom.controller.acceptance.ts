@@ -11,7 +11,7 @@ describe('Architecture Bom', () => {
   const testBomId= 'test_service';
 
   before('setupApplication', async function(this) {
-    this.timeout(5000);
+    this.timeout(30000);
     ({ app, client } = await setupApplication());
   });
 
