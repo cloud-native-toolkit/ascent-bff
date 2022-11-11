@@ -10,6 +10,7 @@ describe('Architecture Bom', () => {
   const testArchId= 'arch01';
   const testBomId= 'test_service';
 
+  // eslint-disable-next-line mocha/handle-done-callback
   before('setupApplication', async function(this) {
     this.timeout(30000);
     ({ app, client } = await setupApplication());
