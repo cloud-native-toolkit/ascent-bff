@@ -38,7 +38,9 @@
     "start": "node -r source-map-support/register .",
     "start:dev": "NODE_ENV=dev node -r source-map-support/register .",
     "clean": "lb-clean dist *.tsbuildinfo .eslintcache",
-    "rebuild": "npm run clean && npm run compile"
+    "rebuild": "npm run clean && npm run compile",
+    "scan": "detect-secrets scan --update .secrets.baseline --exclude-files 'package-lock.json'"
+
   },
   "repository": {
     "type": "git",
