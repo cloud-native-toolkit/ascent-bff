@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/nodejs-16-minimal:1-79 as builder
+FROM registry.access.redhat.com/ubi8/nodejs-16-minimal:1-79
 
 USER 1001
 
