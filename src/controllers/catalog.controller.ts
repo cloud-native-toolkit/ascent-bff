@@ -29,7 +29,7 @@ export class CatalogController {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
 
-    const client = createNodeRedisClient(6379, process.env.REDIS_HOST ?? "localhost");
+    const client = createNodeRedisClient(process.env.REDIS_PORT ? Number(process.env.REDIS_PORT) : 6379, process.env.REDIS_HOST ?? "localhost");
     const jsonobj = [];
     try {
       const key = id.toString().trim();
