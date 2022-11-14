@@ -142,7 +142,7 @@ export class ServicesHelper {
     catalog: Catalog;
 
     constructor() {
-        if (process.env.NODE_ENV !== "test") this.client = createNodeRedisClient(6379, "localhost");
+        if (process.env.NODE_ENV !== "test") this.client = createNodeRedisClient(6379, process.env.REDIS_HOST ?? "localhost");
     }
 
     /**

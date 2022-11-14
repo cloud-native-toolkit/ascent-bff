@@ -11,4 +11,4 @@ RUN npm install && \
 ENV HOST=0.0.0.0 PORT=3001
 
 EXPOSE ${PORT}
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "serve"]

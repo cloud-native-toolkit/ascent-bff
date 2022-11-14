@@ -39,6 +39,7 @@
     "start:dev": "NODE_ENV=dev node -r source-map-support/register .",
     "clean": "lb-clean dist *.tsbuildinfo .eslintcache",
     "rebuild": "npm run clean && npm run compile",
+    "serve": "NODE_ENV=staging node .",
     "scan": "detect-secrets scan --update .secrets.baseline --exclude-files 'package-lock.json'"
 
   },
