@@ -3,7 +3,13 @@
 const express = require("express");
 const axios = require('axios');
 
+const FormData = require('form-data');
+const multer = require('multer');
+const upload = multer();
+
 const app = (module.exports = express());
+// for parsing multipart/form-data
+app.use(upload.array());
 
 app.get('/health', (req, res, next) => {
     return res.status(200).send({
@@ -11,7 +17,39 @@ app.get('/health', (req, res, next) => {
     });
 });
 
-if (process.env.NODE_ENV !== "dev" && process.env.NODE_ENV !== "test") {
+app.post('/accessToken', (req, res, next) => {
+    if (process.env.OCP_API_URL) {
+        return res.status(400).json({
+            error: { message: "Method not supported with OCP auth." }
+        });
+    }
+    const data = new FormData();
+    data.append('grant_type', 'refresh_token');
+    data.append('refresh_token', req.body.refresh_token);
+    axios({
+        method: 'post',
+        url: `${process.env.APPID_OAUTH_SERVER_URL}/token`,
+        auth: {
+            username: process.env.APPID_TENANT_ID,
+            password: process.env.APPID_SECRET
+        },
+        headers: {
+            'Accept': 'application/json',
+            ...data.getHeaders()
+        },
+        data: data
+    })
+        .then((response) => {
+            return res.json(response.data);
+        })
+        .catch(function (error) {
+            return res.status(400).json({
+                error: { message: "Error fetching token.", detail: error?.message }
+            })
+        })
+});
+
+if (!["dev", "test"].includes(process.env.NODE_ENV)) {
 
     // If the OCP_API_URL environment variable is not set, then use App ID
     if (!process.env.OCP_API_URL) {
