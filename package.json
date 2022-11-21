@@ -29,7 +29,7 @@
     "posttest": "npm run lint",
     "test:dev": "lb-mocha --allow-console-logs dist/__tests__/**/*.js && npm run posttest",
     "docker:build": "docker build -t ascent-bff .",
-    "docker:run": "docker run -p 3000:3000 -d ascent-bff",
+    "docker:run": "docker run -p 3001:3001 -d ascent-bff",
     "premigrate": "npm run compile",
     "migrate": "node ./dist/migrate",
     "preopenapi-spec": "npm run compile",

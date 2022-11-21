@@ -11,6 +11,6 @@ fi
 
 echo "Building ${IMAGE_NAME}:${IMAGE_VER}"
 
-docker run -d -p 3000:3000 --env PORT=3000  ${IMAGE_NAME}:${IMAGE_VER}
+docker run -d -p 3001:3001 --env PORT=3001  ${IMAGE_NAME}:${IMAGE_VER}
 
 #docker run -v ~/projects/gsi/admin/gsi-lab-proxy:/etc/nginx/conf.d -e PORT=80 -e APP_ROOT=sandbox nginx:alpine
