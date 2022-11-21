@@ -20,4 +20,4 @@ spec:
   quota: q256mb
   envFrom:
     - secretRef:
-        name: ascent-bff-test
+        name: ascent-bff-prod
