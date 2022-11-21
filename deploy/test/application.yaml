@@ -4,6 +4,18 @@ metadata:
   name: ascent-bff-test
 spec:
   headless: false
+  livenessProbe:
+    httpGet:
+      path: /health
+      scheme: HTTP
+    periodSeconds: 5
+    timeoutSeconds: 30
+  readinessProbe:
+    httpGet:
+      path: /health
+      scheme: HTTP
+    periodSeconds: 5
+    timeoutSeconds: 30
   replicas: 1
   quota: turbo
   envFrom:
