@@ -8,16 +8,19 @@ spec:
     httpGet:
       path: /health
       scheme: HTTP
-    periodSeconds: 5
-    timeoutSeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 180
   readinessProbe:
     httpGet:
       path: /health
       scheme: HTTP
-    periodSeconds: 5
-    timeoutSeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 180
   replicas: 1
   quota: turbo
+  env:
+    - name: HOST
+      value: '0.0.0.0'
   envFrom:
     - secretRef:
         name: ascent-bff-test

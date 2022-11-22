@@ -1,7 +1,7 @@
 apiVersion: cirrus.ibm.com/v1alpha1
 kind: Application
 metadata:
-  name: ascent-bff-test
+  name: ecosystem-engineering-ascent-bff-prod
 spec:
   headless: false
   livenessProbe:
@@ -9,15 +9,18 @@ spec:
       path: /health
       scheme: HTTP
     periodSeconds: 30
-    timeoutSeconds: 30
+    timeoutSeconds: 180
   readinessProbe:
     httpGet:
       path: /health
       scheme: HTTP
     periodSeconds: 30
-    timeoutSeconds: 30
-  replicas: 1
-  quota: q256mb
+    timeoutSeconds: 180
+  replicas: 3
+  quota: turbo
+  env:
+    - name: HOST
+      value: '0.0.0.0'
   envFrom:
     - secretRef:
         name: ascent-bff-prod
