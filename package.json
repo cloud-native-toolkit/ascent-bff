@@ -34,7 +34,7 @@
     "migrate": "node ./dist/migrate",
     "preopenapi-spec": "npm run compile",
     "openapi-spec": "node ./dist/openapi-spec",
-    "start": "node -r source-map-support/register .",
+    "start": "NODE_ENV=staging node .",
     "start:dev": "NODE_ENV=dev node -r source-map-support/register .",
     "clean": "lb-clean dist *.tsbuildinfo .eslintcache",
     "rebuild": "npm run clean && npm run compile",
