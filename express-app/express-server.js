@@ -17,7 +17,7 @@ app.get('/health', (req, res, next) => {
     });
 });
 
-app.post('/accessToken', (req, res, next) => {
+app.post('/token', (req, res, next) => {
     if (process.env.OCP_API_URL) {
         return res.status(400).json({
             error: { message: "Method not supported with OCP auth." }
