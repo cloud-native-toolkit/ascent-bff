@@ -18,7 +18,7 @@ import {
   Response,
   RestBindings
 } from '@loopback/rest';
-import parse from 'csv-parse';
+import {parse} from 'csv-parse';
 import { Profile, ControlMapping } from '../models';
 import { ProfileRepository, ControlMappingRepository, GoalRepository } from '../repositories';
 

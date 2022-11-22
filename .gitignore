@@ -6,6 +6,8 @@ data/db
 
 data/source/nist-injest-script/*.xml
 dist
+config/configmap/
+config/secret/
 yarn-error.log
 tsconfig.tsbuildinfo
 *.ignore*

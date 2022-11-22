@@ -3,6 +3,13 @@
 import nconf from 'nconf';
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
+
+dotenv.config();
+const cmPath = `${process.cwd()}/config/configmap/.env`;
+const secretPath = `${process.cwd()}/config/secret/.env`;
+if (fs.existsSync(cmPath)) dotenv.config({ path: cmPath });
+if (fs.existsSync(secretPath)) dotenv.config({ path: secretPath });
 
 nconf.use('memory');
 

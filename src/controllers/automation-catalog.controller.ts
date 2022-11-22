@@ -6,7 +6,7 @@
 
 import { Inject } from 'typescript-ioc';
 
-import { get, oas, param, response, Response, RestBindings, } from '@loopback/rest';
+import { get, oas, param, Response, RestBindings } from '@loopback/rest';
 
 import * as _ from "lodash"
 
@@ -58,9 +58,6 @@ export class AutomationCatalogController {
   }
 
   @get('/automation/ids')
-  @response(200, {
-    description: 'Get a List of Catalog IDs'
-  })
   async getCatalogIDs(): Promise<object> {
     const data: Object[] = [];
     const catalog = await this.serviceHelper.getCatalog();
@@ -71,9 +68,6 @@ export class AutomationCatalogController {
   }
 
   @get('/automation/{id}/details')
-  @response(200, {
-    description: 'Get automation metadata by automation ID'
-  })
   async automationById(
     @param.path.string('id') id: string,
   ): Promise<Service> {
@@ -81,9 +75,6 @@ export class AutomationCatalogController {
   }
 
   @get('/automation/{bomid}')
-  @response(200, {
-    description: 'Download Terraform Package based on the reference architecture BOM',
-  })
   @oas.response.file()
   async downloadAutomationZip(
     @param.path.string('bomid') bomid: string,

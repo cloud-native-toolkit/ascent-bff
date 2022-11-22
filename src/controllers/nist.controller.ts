@@ -11,6 +11,8 @@ import {
   get,
   getModelSchemaRef,
   response,
+  post,
+  requestBody,
 } from '@loopback/rest';
 import {Nist} from '../models';
 import {NistRepository} from '../repositories';
@@ -48,6 +50,26 @@ export class NistController {
     @param.filter(Nist) filter?: Filter<Nist>,
   ): Promise<Nist[]> {
     return this.nistRepository.find(filter);
+  }
+
+  @post('/nist')
+  @response(200, {
+    description: 'Nist model instance',
+    content: {'application/json': {schema: getModelSchemaRef(Nist)}},
+  })
+  async create(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(Nist, {
+            title: 'NewNist'
+          }),
+        },
+      },
+    })
+    nist: Nist,
+  ): Promise<Nist> {
+    return this.nistRepository.create(nist);
   }
 
   @get('/nist/{id}')

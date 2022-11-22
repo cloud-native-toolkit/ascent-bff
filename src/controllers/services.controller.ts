@@ -1,7 +1,6 @@
 import {Inject} from 'typescript-ioc';
 import {
   Count,
-  CountSchema,
   Filter,
   FilterExcludingWhere,
   repository,
@@ -15,7 +14,6 @@ import {
   patch,
   del,
   requestBody,
-  response,
   Response,
   RestBindings
 } from '@loopback/rest';
@@ -59,10 +57,6 @@ export class ServicesController {
   }
 
   @post('/services')
-  @response(200, {
-    description: 'Services model instance',
-    content: { 'application/json': { schema: getModelSchemaRef(Services) } },
-  })
   async create(
     @requestBody({
       content: {
@@ -81,10 +75,6 @@ export class ServicesController {
   }
 
   @get('/services/count')
-  @response(200, {
-    description: 'Services model count',
-    content: { 'application/json': { schema: CountSchema } },
-  })
   async count(): Promise<Count> {
     const services = await this.serviceHelper.getServices();
     return {
@@ -93,17 +83,6 @@ export class ServicesController {
   }
 
   @get('/services')
-  @response(200, {
-    description: 'Array of Services model instances',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(Services, { includeRelations: true }),
-        },
-      },
-    },
-  })
   async find(
     @param.filter(Services) filter?: Filter<Services>,
   ): Promise<Service[]> {
@@ -126,16 +105,6 @@ export class ServicesController {
   }
 
   @get('/services/composite')
-  @response(200, {
-    description: 'Array of Services model instances, with automation and catalog.',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-        },
-      },
-    },
-  })
   async findComposite(
     @param.filter(Services) filter?: Filter<Services>,
   ): Promise<any> {
@@ -164,10 +133,6 @@ export class ServicesController {
   }
 
   @patch('/services')
-  @response(200, {
-    description: 'Services PATCH success count',
-    content: { 'application/json': { schema: CountSchema } },
-  })
   async updateAll(
     @requestBody({
       content: {
@@ -184,14 +149,6 @@ export class ServicesController {
   }
 
   @get('/services/{id}')
-  @response(200, {
-    description: 'Services model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(Services, { includeRelations: true }),
-      },
-    },
-  })
   async findById(
     @param.path.string('id') id: string,
     @param.filter(Services, { exclude: 'where' }) filter?: FilterExcludingWhere<Services>
@@ -207,14 +164,6 @@ export class ServicesController {
   }
 
   @patch('/services/{id}')
-  @response(200, {
-    description: 'Controls model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(Services),
-      },
-    },
-  })
   async updateById(
     @param.path.string('id') id: string,
     @requestBody({
@@ -232,9 +181,6 @@ export class ServicesController {
   }
 
   @del('/services/{id}')
-  @response(204, {
-    description: 'Services DELETE success',
-  })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.bomRepository.deleteAll({'service_id': id});
     await this.controlMappingRepository.deleteAll({'service_id': id});
@@ -242,10 +188,6 @@ export class ServicesController {
   }
 
   @get('services/catalog/{serviceId}')
-  @response(200, {
-    description: 'catalog by serviceId',
-    content: 'application/json'
-  })
   async catalogByServiceId(
     @param.path.string('serviceId') serviceId: string
   ): Promise<any> {
@@ -282,10 +224,6 @@ export class ServicesController {
 
 
   @get('bom/services/catalog/{bomId}')
-  @response(200, {
-    description: 'catalog by bomId',
-    content: 'application/json'
-  })
   async catalogByBomId(
     @param.path.string('bomId') bomId: string
   ): Promise<any[]> {
