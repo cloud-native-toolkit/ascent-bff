@@ -30,8 +30,8 @@ app.post('/token', (req, res, next) => {
         method: 'post',
         url: `${process.env.APPID_OAUTH_SERVER_URL}/token`,
         auth: {
-            username: process.env.APPID_TENANT_ID,
-            password: process.env.APPID_SECRET
+            username: process.env.APPID_CLIENT_ID,
+            password: process.env.APPID_CLIENT_SECRET
         },
         headers: {
             'Accept': 'application/json',
