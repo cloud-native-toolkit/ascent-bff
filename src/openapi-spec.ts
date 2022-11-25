@@ -1,5 +1,5 @@
 import {ApplicationConfig} from '@loopback/core';
-import {ArchitectureMapperBffApplication} from './application';
+import {AscentBffApplication} from './application';
 
 /**
  * Export the OpenAPI spec from the application
@@ -7,12 +7,12 @@ import {ArchitectureMapperBffApplication} from './application';
 async function exportOpenApiSpec(): Promise<void> {
   const config: ApplicationConfig = {
     rest: {
-      port: +(process.env.PORT ?? 3000),
+      port: +(process.env.PORT ?? 3001),
       host: process.env.HOST ?? 'localhost',
     },
   };
   const outFile = process.argv[2] ?? '';
-  const app = new ArchitectureMapperBffApplication(config);
+  const app = new AscentBffApplication(config);
   await app.boot();
   await app.exportOpenApiSpec(outFile);
 }

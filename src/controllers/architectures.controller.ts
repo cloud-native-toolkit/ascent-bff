@@ -5,7 +5,7 @@ import {
   repository,
   Where,
 } from '@loopback/repository';
-import {inject} from "@loopback/core";
+import { inject } from "@loopback/core";
 import {
   post,
   param,
@@ -20,16 +20,16 @@ import {
   RestBindings,
   Response
 } from '@loopback/rest';
-import {Architectures} from '../models';
+import { Architectures } from '../models';
 import {
   ArchitecturesRepository,
   UserRepository
 } from '../repositories';
-import {FILE_UPLOAD_SERVICE} from '../keys';
-import {FileUploadHandler, File} from '../types';
+import { FILE_UPLOAD_SERVICE } from '../keys';
+import { FileUploadHandler, File } from '../types';
 
 import * as _ from 'lodash';
-import {Services} from '../appenv';
+import { Services } from '../appenv';
 import * as Storage from "ibm-cos-sdk"
 import assert from "assert";
 import yaml from 'js-yaml';
@@ -50,68 +50,71 @@ const INSTANCE_ID = process.env.INSTANCE_ID;
 
 export class ArchitecturesController {
 
-  private cos : Storage.S3;
+  private cos: Storage.S3;
   private bucketName: Storage.S3.BucketName;
 
   constructor(
     @repository(ArchitecturesRepository)
-    public architecturesRepository : ArchitecturesRepository,
+    public architecturesRepository: ArchitecturesRepository,
     @repository(UserRepository)
-    public userRepository : UserRepository,
+    public userRepository: UserRepository,
     @inject(FILE_UPLOAD_SERVICE) private fileHandler: FileUploadHandler,
   ) {
 
     // console.log("Constructor for Architecture API")
 
-    // Load Information from Environment
-    const services = Services.getInstance();
+    if (process.env.NODE_ENV !== 'test') {
 
-    // The services object is a map named by service so we extract the one for MongoDB
-    const storageServices:any = services.getService('storage');
+      // Load Information from Environment
+      const services = Services.getInstance();
 
-    // This check ensures there is a services for MongoDB databases
-    assert(!_.isUndefined(storageServices), 'backend must be bound to storage service');
+      // The services object is a map named by service so we extract the one for MongoDB
+      const storageServices: any = services.getService('storage');
 
-    if (_.isUndefined(storageServices)){
-      console.log("Failed to load Storage sdk")
-      return;
+      // This check ensures there is a services for MongoDB databases
+      assert(!_.isUndefined(storageServices), 'backend must be bound to storage service');
+
+      if (_.isUndefined(storageServices)) {
+        console.log("Failed to load Storage sdk")
+        return;
+      }
+
+      // Connect to Object Storage
+      const config = {
+        endpoint: storageServices.endpoints,
+        apiKeyId: storageServices.apikey,
+        serviceInstanceId: storageServices.resource_instance_id,
+        signatureVersion: 'iam',
+      };
+
+      this.cos = new Storage.S3(config);
+      this.bucketName = `ascent-storage-${INSTANCE_ID}`;
+      if (this.cos) this.cos.listBuckets().promise()
+        .then(data => {
+          if (!data?.Buckets?.find(bucket => bucket.Name === this.bucketName)) {
+            this.cos.createBucket({
+              Bucket: this.bucketName,
+              CreateBucketConfiguration: {
+                LocationConstraint: 'eu-geo'
+              }
+            }).promise()
+              .then(() => {
+                console.log(`Bucket ${this.bucketName} created.`);
+              })
+              .catch(function (err) {
+                console.error(util.inspect(err));
+              });
+          }
+        })
+        .catch(function (err) {
+          console.error(util.inspect(err));
+        });
     }
-
-    // Connect to Object Storage
-    const config = {
-      endpoint: storageServices.endpoints,
-      apiKeyId: storageServices.apikey,
-      serviceInstanceId: storageServices.resource_instance_id,
-      signatureVersion: 'iam',
-    };
-
-    this.cos = new Storage.S3(config);
-    this.bucketName = `ascent-storage-${INSTANCE_ID}`;
-    this.cos.listBuckets().promise()
-      .then(data => {
-        if (!data?.Buckets?.find(bucket => bucket.Name === this.bucketName)) {
-          this.cos.createBucket({
-            Bucket: this.bucketName,
-            CreateBucketConfiguration: {
-              LocationConstraint: 'eu-geo'
-            }
-          }).promise()
-            .then(() => {
-              console.log(`Bucket ${this.bucketName} created.`);
-            })
-            .catch(function(err) {
-              console.error(util.inspect(err));
-            });
-        }
-      })
-      .catch(function(err) {
-        console.error(util.inspect(err));
-      });
   }
 
-  public async getDiagram(arch_id: string, diagramType: DiagramType, small=false): Promise<Storage.S3.Body> {
+  public async getDiagram(arch_id: string, diagramType: DiagramType, small = false): Promise<Storage.S3.Body> {
     return new Promise((resolve, reject) => {
-      this.cos.getObject({
+      if (this.cos) this.cos.getObject({
         Bucket: this.bucketName,
         Key: `diagrams/${diagramType}/${small ? "small-" : ""}${arch_id}-diagram.${diagramType}`
       }).promise()
@@ -119,10 +122,12 @@ export class ArchitecturesController {
           if (data?.Body) {
             return resolve(data.Body);
           }
-          return reject({error: {
-            message: `Error retrieving diagram`,
-            details: data
-          }});
+          return reject({
+            error: {
+              message: `Error retrieving diagram`,
+              details: data
+            }
+          });
         }, (error) => {
           if (error?.code === "NoSuchKey") {
             return this.cos.getObject({
@@ -133,32 +138,43 @@ export class ArchitecturesController {
                 if (data?.Body) {
                   return resolve(data.Body);
                 }
-                return reject({error: {
-                  message: `Error retrieving diagram`,
-                  details: data
-                }});
+                return reject({
+                  error: {
+                    message: `Error retrieving diagram`,
+                    details: data
+                  }
+                });
               }, (e) => {
-                return reject({error: {
+                return reject({
+                  error: {
+                    message: `Error retrieving diagram`,
+                    details: e
+                  }
+                });
+              })
+              .catch((e) => reject({
+                error: {
                   message: `Error retrieving diagram`,
                   details: e
-                }});
-              })
-              .catch((e) => reject({error: {
-                message: `Error retrieving diagram`,
-                details: e
-              }}));
+                }
+              }));
           }
-          return reject({error: {
-            message: `Error retrieving diagram`,
-            details: error
-          }});
+          return reject({
+            error: {
+              message: `Error retrieving diagram`,
+              details: error
+            }
+          });
         })
         .catch((e) => {
-          return reject({error: {
-          message: `Error retrieving diagram`,
-          details: e
-          }});
-      });
+          return reject({
+            error: {
+              message: `Error retrieving diagram`,
+              details: e
+            }
+          });
+        });
+      else resolve('')
     });
   }
 
@@ -174,29 +190,33 @@ export class ArchitecturesController {
     @inject(RestBindings.Http.RESPONSE) res: Response,
   ): Promise<any> {
     if (fileType !== DiagramType.DRAWIO && fileType !== DiagramType.PNG) {
-      return res.status(400).send({error: {
-        message: `Diagram type must be either "drawio" or "png"`
-      }});
+      return res.status(400).send({
+        error: {
+          message: `Diagram type must be either "drawio" or "png"`
+        }
+      });
     }
     const arch = await this.architecturesRepository.findById(arch_id);
     return new Promise((resolve, reject) => {
       this.getDiagram(arch.arch_id, fileType, small)
-          .then((data) => {
-            return resolve(data);
-          }, (error => {
-            return reject(res.status(400).send(error));
-          }))
-          .catch(getErr => {
-            return reject(res.status(400).send({error: {
+        .then((data) => {
+          return resolve(data);
+        }, (error => {
+          return reject(res.status(400).send(error));
+        }))
+        .catch(getErr => {
+          return reject(res.status(400).send({
+            error: {
               message: `Error retrieving diagram`,
               details: getErr
-            }}));
-          });
+            }
+          }));
+        });
     });
   }
 
   private async putDiagrams(files: File[], arch_id: string): Promise<object> {
-    const error = {message: ""};
+    const error = { message: "" };
     if (files.length < 1 || files.length > 2) error.message += "You must upload 1 or 2 files. ";
     if (files.find((f) => (f.fieldname !== "drawio" && f.fieldname !== "png"))) error.message += "Only .drawio and .png files are accepted. ";
     if (files.find((f) => f.size > 2000 * 1024)) error.message += "File too large (must me <= 2MiB) ";
@@ -215,11 +235,11 @@ export class ArchitecturesController {
       });
     }
     return new Promise((resolve, reject) => {
-      if (error.message) return reject({error: error});
+      if (error.message) return reject({ error: error });
       let fileIx = 0;
-      const errors:object[] = [];
+      const errors: object[] = [];
       for (const file of files) {
-        this.cos.putObject({
+        if (this.cos) this.cos.putObject({
           Bucket: this.bucketName,
           Key: `diagrams/${file.fieldname}/${(file.name === "png-small") ? "small-" : ""}${arch_id}-diagram.${file.fieldname}`,
           Body: file.buffer
@@ -228,10 +248,11 @@ export class ArchitecturesController {
             errors.push(err);
           }
           if (++fileIx === files.length) {
-            if (err) return reject({error: errors});
+            if (err) return reject({ error: errors });
             return resolve({});
           }
         });
+        else resolve({});
       }
     });
   }
@@ -245,10 +266,10 @@ export class ArchitecturesController {
     @requestBody.file() request: Request,
     @inject(RestBindings.Http.RESPONSE) res: Response,
   ): Promise<void> {
-    const arch = await this.architecturesRepository.findById(arch_id, {include: ['owners']});
+    const arch = await this.architecturesRepository.findById(arch_id, { include: ['owners'] });
     return new Promise((resolve, reject) => {
       this.fileHandler(request, res, (err: unknown) => {
-        if (err) reject({error: err});
+        if (err) reject({ error: err });
         else {
           const uploadedFiles = request.files;
           const mapper = (f: globalThis.Express.Multer.File) => ({
@@ -267,22 +288,22 @@ export class ArchitecturesController {
             }
           }
           this.putDiagrams(files, arch.arch_id)
-          .then((putErr) => {
-            if (putErr) return reject(res.status(400).send(putErr));
-            return resolve();
-          })
-          .catch(putErr => {
-            return reject(res.status(400).send(putErr));
-          });
+            .then((putErr) => {
+              if (putErr) return reject(res.status(400).send(putErr));
+              return resolve();
+            })
+            .catch(putErr => {
+              return reject(res.status(400).send(putErr));
+            });
         }
       });
     });
   }
-  
+
   @post('/architectures')
   @response(200, {
     description: 'Architectures model instance',
-    content: {'application/json': {schema: getModelSchemaRef(Architectures)}},
+    content: { 'application/json': { schema: getModelSchemaRef(Architectures) } },
   })
   async create(
     @requestBody({
@@ -304,20 +325,22 @@ export class ArchitecturesController {
         try {
           yaml.load(architectures.yaml);
         } catch (error) {
-          return reject(res.status(400).send({error: {
-            message: "Wrong yaml format for automation variables",
-            details: error
-          }}));
+          return reject(res.status(400).send({
+            error: {
+              message: "Wrong yaml format for automation variables",
+              details: error
+            }
+          }));
         }
       }
-      const user:any = req?.user;
-      const email:string = user?.email;
+      const user: any = req?.user;
+      const email: string = user?.email;
       if (email) this.userRepository.architectures(email).create(architectures)
         .then((arch) => {
           resolve(arch);
         })
         .catch((err) => {
-          reject({error: err});
+          reject({ error: err });
         });
       else return resolve(this.architecturesRepository.create(architectures));
     });
@@ -326,7 +349,7 @@ export class ArchitecturesController {
   @get('/architectures/count')
   @response(200, {
     description: 'Architectures model count',
-    content: {'application/json': {schema: CountSchema}},
+    content: { 'application/json': { schema: CountSchema } },
   })
   async count(
     @param.where(Architectures) where?: Where<Architectures>,
@@ -341,25 +364,25 @@ export class ArchitecturesController {
       'application/json': {
         schema: {
           type: 'array',
-          items: getModelSchemaRef(Architectures, {includeRelations: true}),
+          items: getModelSchemaRef(Architectures, { includeRelations: true }),
         },
       },
     },
   })
   async find(): Promise<Architectures[]> {
-    return this.architecturesRepository.find({include: ["owners"], where: {public: true}});
+    return this.architecturesRepository.find({ include: ["owners"], where: { public: true } });
   }
 
   @patch('/architectures')
   @response(200, {
     description: 'Architectures PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
+    content: { 'application/json': { schema: CountSchema } },
   })
   async updateAll(
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Architectures, {partial: true}),
+          schema: getModelSchemaRef(Architectures, { partial: true }),
         },
       },
     })
@@ -372,10 +395,12 @@ export class ArchitecturesController {
         try {
           yaml.load(architectures.yaml);
         } catch (error) {
-          return reject(res.status(400).send({error: {
-            message: "Wrong yaml format for automation variables",
-            details: error
-          }}));
+          return reject(res.status(400).send({
+            error: {
+              message: "Wrong yaml format for automation variables",
+              details: error
+            }
+          }));
         }
       }
       return resolve(this.architecturesRepository.updateAll(architectures, where));
@@ -387,13 +412,13 @@ export class ArchitecturesController {
     description: 'Architectures model instance',
     content: {
       'application/json': {
-        schema: getModelSchemaRef(Architectures, {includeRelations: true}),
+        schema: getModelSchemaRef(Architectures, { includeRelations: true }),
       },
     },
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(Architectures, {exclude: 'where'}) filter?: FilterExcludingWhere<Architectures>
+    @param.filter(Architectures, { exclude: 'where' }) filter?: FilterExcludingWhere<Architectures>
   ): Promise<Architectures> {
     return this.architecturesRepository.findById(id, filter);
   }
@@ -403,7 +428,7 @@ export class ArchitecturesController {
     description: 'Architectures model instance',
     content: {
       'application/json': {
-        schema: getModelSchemaRef(Architectures, {includeRelations: true}),
+        schema: getModelSchemaRef(Architectures, { includeRelations: true }),
       },
     },
   })
@@ -412,7 +437,7 @@ export class ArchitecturesController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Architectures, {partial: true}),
+          schema: getModelSchemaRef(Architectures, { partial: true }),
         },
       },
     })
@@ -424,19 +449,21 @@ export class ArchitecturesController {
         try {
           yaml.load(architectures.yaml);
         } catch (error) {
-          return reject(res.status(400).send({error: {
-            message: "Wrong yaml format for automation variables",
-            details: error
-          }}));
+          return reject(res.status(400).send({
+            error: {
+              message: "Wrong yaml format for automation variables",
+              details: error
+            }
+          }));
         }
       }
       this.architecturesRepository.updateById(id, architectures)
-      .then(() => {
-        return resolve(this.architecturesRepository.findById(id));
-      })
-      .catch((err) => {
-        return reject(err);
-      });
+        .then(() => {
+          return resolve(this.architecturesRepository.findById(id));
+        })
+        .catch((err) => {
+          return reject(err);
+        });
     });
   }
 
@@ -445,19 +472,19 @@ export class ArchitecturesController {
     description: 'Architectures DELETE success',
   })
   async deleteById(
-      @param.path.string('id') id: string,
-    ): Promise<void> {
+    @param.path.string('id') id: string,
+  ): Promise<void> {
     await this.architecturesRepository.boms(id).delete();
     for (const owner of await this.architecturesRepository.owners(id).find()) {
       await this.architecturesRepository.owners(id).unlink(owner.email);
     }
     await this.architecturesRepository.deleteById(id);
   }
-  
+
   @post('/architectures/{id}/duplicate')
   @response(200, {
     description: 'Architectures model instance',
-    content: {'application/json': {schema: getModelSchemaRef(Architectures)}},
+    content: { 'application/json': { schema: getModelSchemaRef(Architectures) } },
   })
   async duplicate(
     @param.path.string('id') arch_id: string,
@@ -466,7 +493,7 @@ export class ArchitecturesController {
         'application/json': {
           schema: getModelSchemaRef(Architectures, {
             partial: true,
-            exclude: ['short_desc','long_desc','public','production_ready','yaml']
+            exclude: ['short_desc', 'long_desc', 'public', 'production_ready', 'yaml']
           }),
         },
       },
@@ -486,8 +513,8 @@ export class ArchitecturesController {
       production_ready: existingArch.production_ready,
       yaml: existingArch.yaml
     })
-    const user:any = req?.user;
-    const email:string = user?.email;
+    const user: any = req?.user;
+    const email: string = user?.email;
     if (email) newArch = await this.userRepository.architectures(email).create(newArch);
     else newArch = await this.architecturesRepository.create(newArch);
     // Duplicate architecture BOMs
@@ -498,7 +525,7 @@ export class ArchitecturesController {
       await this.architecturesRepository.boms(archDetails.arch_id).create(bom);
     }
     // Duplicate architecture diagrams
-    try {
+    if (this.cos) try {
       const diagramPng = await this.cos.getObject({
         Bucket: this.bucketName,
         Key: `diagrams/png/${arch_id}-diagram.png`
@@ -511,7 +538,7 @@ export class ArchitecturesController {
     } catch (error) {
       console.log(`Error duplicating ${arch_id} PNG diagram: `, error);
     }
-    try {
+    if (this.cos) try {
       const diagramPngSmall = await this.cos.getObject({
         Bucket: this.bucketName,
         Key: `diagrams/png/small-${arch_id}-diagram.png`
@@ -524,7 +551,7 @@ export class ArchitecturesController {
     } catch (error) {
       console.log(`Error duplicating ${arch_id} small PNG diagram: `, error);
     }
-    try {
+    if (this.cos) try {
       const diagramDrawio = await this.cos.getObject({
         Bucket: this.bucketName,
         Key: `diagrams/drawio/${arch_id}-diagram.drawio`

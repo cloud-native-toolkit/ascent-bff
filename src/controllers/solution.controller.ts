@@ -7,12 +7,10 @@ import {
   post,
   param,
   get,
-  getModelSchemaRef,
   patch,
   del,
   oas,
   requestBody,
-  response,
   RestBindings,
   Request,
   Response
@@ -73,47 +71,37 @@ export class SolutionController {
 
     this.automationCatalogController = new AutomationCatalogController(this.architecturesRepository, this.servicesRepository, this.userRepository, this.fileHandler);
 
-    // Load Information from Environment
-    const services = Services.getInstance();
-
-    // The services object is a map named by service so we extract the one for MongoDB
-    const storageServices:any = services.getService('storage');
-
-    // This check ensures there is a services for MongoDB databases
-    assert(!_.isUndefined(storageServices), 'backend must be bound to storage service');
-
-    if (_.isUndefined(storageServices)){
-      console.log("Failed to load Storage sdk")
-      return;
+    if (process.env.NODE_ENV !== 'test') {
+      // Load Information from Environment
+      const services = Services.getInstance();
+  
+      // The services object is a map named by service so we extract the one for MongoDB
+      const storageServices:any = services.getService('storage');
+  
+      // This check ensures there is a services for MongoDB databases
+      assert(!_.isUndefined(storageServices), 'backend must be bound to storage service');
+  
+      if (_.isUndefined(storageServices)){
+        console.log("Failed to load Storage sdk")
+        return;
+      }
+  
+      // Connect to Object Storage
+      const config = {
+        endpoint: storageServices.endpoints,
+        apiKeyId: storageServices.apikey,
+        serviceInstanceId: storageServices.resource_instance_id,
+        signatureVersion: 'iam',
+      };
+  
+      this.cos = new Storage.S3(config);
     }
 
-    // Connect to Object Storage
-    const config = {
-      endpoint: storageServices.endpoints,
-      apiKeyId: storageServices.apikey,
-      serviceInstanceId: storageServices.resource_instance_id,
-      signatureVersion: 'iam',
-    };
-
-    this.cos = new Storage.S3(config);
   }
 
   @post('/solutions')
-  @response(200, {
-    description: 'Solution model instance',
-    content: {'application/json': {schema: getModelSchemaRef(Solution)}},
-  })
   async create(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: {
-            solution: getModelSchemaRef(Solution),
-            architectures: getModelSchemaRef(Architectures)
-          },
-        },
-      },
-    })
+    @requestBody()
     body: PostBody,
     @inject(RestBindings.Http.REQUEST) req: any,
     @inject(RestBindings.Http.RESPONSE) res: Response,
@@ -182,7 +170,7 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
     // Put default readme for solution
     try {
       await new Promise((resolve, reject) => {
-        this.cos.putObject({
+        if (this.cos) this.cos.putObject({
           Bucket: BUCKET_NAME,
           Key: `solutions/${newSolution.id}/README.md`,
           Body: Buffer.from(readme)
@@ -193,6 +181,7 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
           console.log('README added')
           return resolve('ok');
         });
+        else resolve('ok');
       });
     } catch (error) {
       console.log(error);
@@ -201,9 +190,6 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
   }
 
   @post('/solutions/{id}/files')
-  @response(204, {
-    description: 'Files upload success',
-  })
   async uploadFiles(
     @param.path.string('id') id: string,
     @requestBody.file() request: Request,
@@ -234,7 +220,7 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
           let fileIx = 0;
           const errors:object[] = [];
           for (const file of files) {
-            this.cos.putObject({
+            if (this.cos) this.cos.putObject({
               Bucket: BUCKET_NAME,
               Key: `solutions/${id}/${file.name}`,
               Body: file.buffer
@@ -247,6 +233,7 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
                 return resolve();
               }
             });
+            else if (++fileIx === files.length) return resolve();
           }
         }
       });
@@ -254,17 +241,6 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
   }
 
   @get('/solutions')
-  @response(200, {
-    description: 'Array of Solution model instances',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(Solution, {includeRelations: true}),
-        },
-      },
-    },
-  })
   async find(
     @param.filter(Solution) filter?: Filter<Solution>,
   ): Promise<Solution[]> {
@@ -280,21 +256,13 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
   }
 
   @get('/solutions/{id}')
-  @response(200, {
-    description: 'Solution model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(Solution, {includeRelations: true}),
-      },
-    },
-  })
   async findById(
     @param.path.string('id') id: string,
     @param.filter(Solution, {exclude: 'where'}) filter?: FilterExcludingWhere<Solution>
   ): Promise<any> {
     const solution:any = JSON.parse(JSON.stringify(await this.solutionRepository.findById(id, filter)));
     try {
-      let solObjects = (await this.cos.listObjects({Bucket: BUCKET_NAME}).promise()).Contents;
+      let solObjects = this.cos ? (await this.cos.listObjects({Bucket: BUCKET_NAME}).promise()).Contents : [];
       if (solObjects) {
         solObjects = solObjects.filter(obj => obj.Key?.startsWith(`solutions/${id}/`));
         for (const obj of solObjects) {
@@ -310,9 +278,6 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
   }
 
   @get('/solutions/{id}/files/{filename}')
-  @response(200, {
-    description: 'Get solution file by name',
-  })
   @oas.response.file()
   async getFile(
     @param.path.string('id') id: string,
@@ -320,10 +285,10 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
     @inject(RestBindings.Http.RESPONSE) res: Response,
   ): Promise<any> {
     try {
-      return (await this.cos.getObject({
+      return this.cos ? (await this.cos.getObject({
         Bucket: BUCKET_NAME,
         Key: `solutions/${id}/${filename}`
-      }).promise()).Body;
+      }).promise()).Body : '';
     } catch (error) {
       return res.status(400).send({error: {
         message: `Could not fetch file ${filename} for solution ${id}`,
@@ -333,9 +298,6 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
   }
 
   @get('/solutions/{id}/files.zip')
-  @response(200, {
-    description: 'Get solution file by name',
-  })
   @oas.response.file()
   async getFiles(
     @param.path.string('id') id: string,
@@ -345,18 +307,18 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
       const zip = new AdmZip();
 
       // Add files from COS
-      let objects = (await this.cos.listObjects({
+      let objects = this.cos ? (await this.cos.listObjects({
         Bucket: BUCKET_NAME
-      }).promise()).Contents;
+      }).promise()).Contents : [];
       if (objects) {
         objects = objects.filter(file => file.Key?.startsWith(`solutions/${id}/`));
       }
       if (objects) for (const object of objects) {
         if (object.Key) {
-          const cosObj = (await this.cos.getObject({
+          const cosObj = this.cos ? (await this.cos.getObject({
             Bucket: BUCKET_NAME,
             Key: object.Key
-          }).promise()).Body;
+          }).promise()).Body : [];
           if (cosObj) zip.addFile(object.Key?.replace(`solutions/${id}/`, ''), new Buffer(cosObj.toString()));
         }
       }
@@ -371,9 +333,6 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
   }
 
   @get('/solutions/{id}/automation')
-  @response(200, {
-    description: 'Download Terraform Package for solution',
-  })
   @oas.response.file()
   async downloadAutomationZip(
       @param.path.string('id') id: string,
@@ -414,18 +373,18 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
 
       // Add files from COS
       try {
-        let objects = (await this.cos.listObjects({
+        let objects = this.cos ? (await this.cos.listObjects({
           Bucket: BUCKET_NAME
-        }).promise()).Contents;
+        }).promise()).Contents : [];
         if (objects) {
           objects = objects.filter(file => file.Key?.startsWith(`solutions/${id}/`));
         }
         if (objects) for (const object of objects) {
           if (object.Key) {
-            const cosObj = (await this.cos.getObject({
+            const cosObj = this.cos ? (await this.cos.getObject({
               Bucket: BUCKET_NAME,
               Key: object.Key
-            }).promise()).Body;
+            }).promise()).Body : '';
             if (cosObj) zip.addFile(object.Key?.replace(`solutions/${id}/`, ''), new Buffer(cosObj.toString()));
           }
         }
@@ -445,22 +404,9 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
   }
 
   @patch('/solutions/{id}')
-  @response(200, {
-    description: 'Solution model instance',
-    content: {'application/json': {schema: getModelSchemaRef(Solution)}},
-  })
   async updateById(
     @param.path.string('id') id: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: {
-            solution: getModelSchemaRef(Solution),
-            architectures: getModelSchemaRef(Architectures)
-          },
-        },
-      },
-    })
+    @requestBody()
     body: PostBody,
     @inject(RestBindings.Http.REQUEST) req: any,
     @inject(RestBindings.Http.RESPONSE) res: Response,
@@ -478,16 +424,13 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
   }
 
   @del('/solutions/{id}')
-  @response(204, {
-    description: 'Solution DELETE success',
-  })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     try {
       // Delete all objects in solution bucket
-      const objs = (await this.cos.listObjects({
+      const objs = this.cos ? (await this.cos.listObjects({
         Bucket: BUCKET_NAME
-      }).promise()).Contents?.filter(obj => obj.Key?.startsWith(`solutions/${id}/`))?.filter(obj => obj.Key);
-      if (objs) await this.cos.deleteObjects({
+      }).promise()).Contents?.filter(obj => obj.Key?.startsWith(`solutions/${id}/`))?.filter(obj => obj.Key) : [];
+      if (objs && this.cos) await this.cos.deleteObjects({
         Bucket: BUCKET_NAME,
         Delete: {
           Objects: objs.map((obj => ({ Key: obj.Key ?? '' })))
@@ -504,9 +447,6 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
   }
 
   @get('/solutions/{id}/automation/techzone')
-  @response(200, {
-    description: 'Download Terraform Package for solution',
-  })
   @oas.response.file()
   downloadAutomationTechzone(
       @param.path.string('id') id: string,

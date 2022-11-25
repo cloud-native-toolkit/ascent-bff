@@ -1,9 +1,9 @@
 import { Client } from '@loopback/testlab';
-import { ArchitectureMapperBffApplication } from '../..';
+import { AscentBffApplication } from '../..';
 import { setupApplication } from './test-helper';
 
 describe('Goals', () => {
-  let app: ArchitectureMapperBffApplication;
+  let app: AscentBffApplication;
   let client: Client;
 
   before('setupApplication', async () => {
@@ -25,13 +25,6 @@ describe('Goals', () => {
   it('GET all goal', async () => {
     await client
       .get('/goals')
-      .expect(200)
-      .expect('Content-Type', /application\/json/);
-  });
-
-  it('GET goal by id', async () => {
-    await client
-      .get('/goals/3000010')
       .expect(200)
       .expect('Content-Type', /application\/json/);
   });

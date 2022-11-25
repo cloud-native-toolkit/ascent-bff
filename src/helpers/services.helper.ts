@@ -125,7 +125,7 @@ export class ServicesHelper {
     catalog: Catalog;
 
     constructor() {
-        if (process.env.NODE_ENV !== "test") this.client = createNodeRedisClient(6379, "localhost");
+        if (process.env.NODE_ENV !== "test") this.client = createNodeRedisClient(process.env.REDIS_PORT ? Number(process.env.REDIS_PORT) : 6379, process.env.REDIS_HOST ?? "localhost");
     }
 
     /**
@@ -340,7 +340,7 @@ export class ServicesHelper {
     async validateBomModuleYaml(yamlString: string, moduleRef: string): Promise<void> {
         try {
             const catalog = await this.getCatalog();
-            //await this.moduleSelector.validateBillOfMaterialModuleConfigYaml(catalog, moduleRef, yamlString);
+            await this.moduleSelector.validateBillOfMaterialModuleConfigYaml(catalog, moduleRef, yamlString);
         } catch (error) {
             throw { message: `Module ${moduleRef} yaml config validation failed.`, details: error };
         }

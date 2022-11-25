@@ -1,9 +1,9 @@
 import { Client, expect } from '@loopback/testlab';
-import { ArchitectureMapperBffApplication } from '../..';
+import { AscentBffApplication } from '../..';
 import { setupApplication } from './test-helper';
 
 describe('Solution', () => {
-    let app: ArchitectureMapperBffApplication;
+    let app: AscentBffApplication;
     let client: Client;
     const testSolutionId = "test-solution"
 

@@ -1,16 +1,10 @@
-//'use warn'
-import {
-  param,
-  get,
-  response, 
-} from '@loopback/rest';
-import fetch from 'node-fetch';
+import { get, param, response } from "@loopback/rest";
 import { createNodeRedisClient } from 'handy-redis';
 import { URL } from 'url';
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import axios from 'axios';
 
 export class CatalogController {
+  constructor() {}
 
   @get('/catalog/{offset}/{limit}')
   async catalog(
@@ -19,44 +13,23 @@ export class CatalogController {
   ): Promise<JSON> {
 
     const url = new URL("https://globalcatalog.cloud.ibm.com/api/v1?_offset=" + offset + "&_limit=" + limit + "&complete=false");
-    const res = await fetch(url.toString());
+    const res = await axios(url.toString());
 
     if (res.status >= 400) {
       throw new Error("Bad response from server");
     }
-    const data = await res.json();
+    const data = await res.data;
     return data;
   }
 
-
-  /*@get('/catalog/{id}')
-  @response(200, {
-    description: 'Catalog by id',
-    content: 'application/json'
-  })
-  async catalogById(
-    @param.path.string('id') id: string,
-  ): Promise<any> {
-
-    const jsonobj = [];
-    const url = new URL('https://globalcatalog.cloud.ibm.com/api/v1?_limit=100&complete=false&q=' + id);
-    const res = await fetch(url.toString());
-    const data = await res.json();
-    jsonobj.push(JSON.stringify(data));
-      
-    return jsonobj;
-  }*/
-
   @get('/catalog/{id}')
-  @response(200, {
-    description: 'Catalog by id',
-    content: 'application/json'
-  })
+  @response(200)
   async catalogById(
     @param.path.string('id') id: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
 
-    const client = createNodeRedisClient(6379, "localhost");
+    const client = createNodeRedisClient(process.env.REDIS_PORT ? Number(process.env.REDIS_PORT) : 6379, process.env.REDIS_HOST ?? "localhost");
     const jsonobj = [];
     try {
       const key = id.toString().trim();
@@ -68,8 +41,8 @@ export class CatalogController {
       console.log(`IBM Catalog data retrieved from the cache -> ${key}`);
       } else {
         const url = new URL('https://globalcatalog.cloud.ibm.com/api/v1?_limit=100&complete=false&q=' + key);        
-        const res = await fetch(url.toString());
-        const data = await res.json();
+        const res = await axios(url.toString());
+        const data = await res.data;
         if (data.resource_count !== 0) {
           await client.set(key, JSON.stringify(data));
           jsonobj.push(JSON.stringify(data));
@@ -84,5 +57,4 @@ export class CatalogController {
     }
     return jsonobj;
   }
-
 }
