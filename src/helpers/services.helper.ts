@@ -21,6 +21,7 @@ import { semanticVersionDescending, semanticVersionFromString } from '../util/se
 import { Architectures, Bom, Controls } from '../models';
 import catalogConfig from '../config/automation-catalog.config'
 import first from '../util/first';
+import axios from 'axios';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -372,5 +373,30 @@ export class ServicesHelper {
         await iascableBundle.writeBundle(getBundleWriter(BundleWriterType.zip)).generate(`${process.cwd()}/.result.ignore.zip`);
         
         return fs.readFileSync(`${process.cwd()}/.result.ignore.zip`);
+    }
+
+    /**
+     * Get solution boms
+     * @returns BOMs that consistute given solution
+     */
+    async solutionBoms(solutionId: string): Promise<string[]> {
+        try {
+            const catalog = await this.getCatalog();
+            const catEntry = catalog.boms.find(entry => entry.name === solutionId && entry.type === 'solution');
+            let boms:string[] = [];
+            if (catEntry?.versions[0].metadataUrl) {
+                const yamlString = await (await axios.get(catEntry?.versions[0].metadataUrl)).data;
+                const obj = yaml.load(yamlString);
+                const stack:{ name: string }[] = obj?.spec?.stack;
+                for (const stackItem of stack) {
+                    const stackItemCatEntry = catalog.boms.find(entry => entry.name === stackItem.name);
+                    if (stackItemCatEntry?.type === 'solution') boms = [...boms, ...(await this.solutionBoms(stackItem.name))];
+                    else boms = [...boms, stackItem.name];
+                }
+            }
+            return boms;
+        } catch (error) {
+            throw { message: `Error fetching solution ${solutionId} boms`, details: error };
+        }
     }
 }

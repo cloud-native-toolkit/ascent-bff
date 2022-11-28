@@ -27,6 +27,7 @@ import { AutomationCatalogController } from '../controllers';
 
 import YAML from 'yaml';
 
+import { Inject } from 'typescript-ioc';
 import {Services} from '../appenv';
 
 import {
@@ -41,6 +42,7 @@ import {
 } from '../repositories';
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler, File} from '../types';
+import { ServicesHelper } from '../helpers/services.helper';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -49,11 +51,14 @@ const BUCKET_NAME = `ascent-storage-${INSTANCE_ID}`;
 
 interface PostBody {
   solution: Solution,
-  architectures: Architectures[]
+  architectures: Architectures[],
+  solutions: string[],
+  platform: string
 }
 
 export class SolutionController {
 
+  @Inject serviceHelper!: ServicesHelper;
   private cos : Storage.S3;
   private automationCatalogController: AutomationCatalogController;
 
@@ -100,12 +105,12 @@ export class SolutionController {
   }
 
   @post('/solutions')
-  async create(
+  async create (
     @requestBody()
     body: PostBody,
     @inject(RestBindings.Http.REQUEST) req: any,
     @inject(RestBindings.Http.RESPONSE) res: Response,
-  ): Promise<Solution|object> {
+  ) : Promise<Solution|object> {
     const user:any = req?.user;
     const email:string = user?.email;
     let newSolution:Solution;
@@ -118,12 +123,16 @@ export class SolutionController {
     }
 
     // Bind BOMs to solution
+    let boms:string[] = body.architectures.map(a => a.arch_id);
+    if (body.solutions) for (const sol of body.solutions) {
+      boms = [...boms, ...(await this.serviceHelper.solutionBoms(sol))];
+    }
     const archsWithDetails = [];
-    body.architectures = body.architectures.sort((a,b) => a.arch_id < b.arch_id ? -1 : 1);
-    for (const arch of body.architectures) {
-      await this.solutionRepository.architectures(newSolution.id).link(arch.arch_id);
+    boms = Array.from(new Set(boms)).sort((a,b) => a < b ? -1 : 1);
+    for (const bom of boms) {
+      await this.solutionRepository.architectures(newSolution.id).link(bom);
       try {
-        const archObj = await this.architecturesRepository.findById(arch.arch_id);
+        const archObj = await this.architecturesRepository.findById(bom);
         archsWithDetails.push({ ...archObj, type: YAML.parse(archObj.yaml)?.metadata?.labels?.type });
       } catch (error) {
         console.log(error);
@@ -132,8 +141,6 @@ export class SolutionController {
     // Creates default README
     const readme = `
 # Solution: ${newSolution.name}
-
-Please return to [your solution](https://builder.cloudnativetoolkit.dev/solutions/${newSolution.id}) to make changes.
 
 This collection of terraform automation bundles has been crafted from a set of Terraform modules created by Ecosytem Lab team part of the IBM Strategic Partnership.
 
@@ -164,7 +171,7 @@ ${archsWithDetails.filter(arch => arch.type !== 'software').map(arch => `| ${arc
 ${archsWithDetails.filter(arch => arch.type === 'software').map(arch => `| ${arch.arch_id} | [${arch.name}](https://builder.cloudnativetoolkit.dev/boms/${arch.arch_id}) | ${arch.short_desc} |`).join('\n')}
 
 
-This solution was built with the [Techzone Accelerator Toolkit](https://builder.cloudnativetoolkit.dev/).
+This solution was built with the [Techzone Deployer](https://builder.techzone.ibm.com).
 
     `
     // Put default readme for solution
