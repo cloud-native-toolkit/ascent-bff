@@ -37,10 +37,6 @@ import {
 } from '../repositories';
 import { BomController } from '.';
 
-import catalogConfig from '../config/automation-catalog.config';
-
-import AdmZip = require("adm-zip");
-
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler, File} from '../types';
 
@@ -52,8 +48,6 @@ import fs from "fs";
 
 import { ArchitecturesController, DiagramType } from './architectures.controller'
 import axios from 'axios';
-
-const latestReleaseUrl = catalogConfig.latestReleaseUrl;
 
 /* eslint-disable no-throw-literal */
 /* eslint-disable @typescript-eslint/naming-convention */
@@ -388,6 +382,7 @@ export class ArchitecturesBomController {
           } else {
 
             const uploadedFiles = request.files;
+            console.log(uploadedFiles)
             const mapper = (f: globalThis.Express.Multer.File) => ({
               mimetype: f.mimetype,
               buffer: f.buffer,
@@ -425,69 +420,17 @@ export class ArchitecturesBomController {
   }
 
   @post('/architectures/public/sync')
-  async syncRefArchs(
-    @inject(RestBindings.Http.RESPONSE) res: Response,
-  ): Promise<object|void> {
-    // Get latest iascable release 
-    const release = (await axios(latestReleaseUrl)).data;
-    try {
-      const curRelease = await this.automationReleaseRepository.findById('current');
-      if (curRelease.tagName === release.tag_name) return res.status(400).send({
-        error: { message: `iascable is up to date: version ${release.tag_name}` }
-      });
-    } catch (error) {
-      console.log(error);
-    }
-    
-    // Get latest release ZIP archive
-    const zip = new AdmZip((await axios(release.zipball_url)).data);
-    const zipEntries = zip.getEntries();
-    const success:Architectures[] = [];
-    for (const zipEntry of zipEntries) {
-      // Get ref-arch BOMs
-      if (!zipEntry.isDirectory && zipEntry.entryName.match(/.*\/ref-arch\/.*.yaml$/g)) {
-        const arch_id = zipEntry.name.split(".yaml")[0];
-        console.log(`Syncing BOM ${arch_id} from iascable ${release.tag_name}`);
-        let arch:Architectures;
-        try {
-          arch = await this.architecturesRepository.findById(arch_id);
-        } catch (error) {
-          console.log(`Architecture ${arch_id} does not exist, create it`);
-        }
-        try {
-          arch = await this.importYaml(
-            zipEntry.getData().toString(),
-            "true",
-            true
-          );
-          success.push(arch);
-        } catch (error) {
-          console.log(error);
-          return res.status(400).send({error: error});
-        }
+  async syncRefArchs(): Promise<Architectures[]> {
+    const boms = await this.serviceHelper.getBoms();
+    const res:Architectures[] = [];
+    for (const bom of boms) {
+      if (bom.type === 'bom') {
+        console.log(`Syncing ${bom.name}`);
+        const yamlString:string = await (await axios.get(bom?.versions[0].metadataUrl)).data;
+        res.push(await this.importYaml(yamlString, 'true', true));
       }
     }
-
-    // Set current release
-    try {
-      await this.automationReleaseRepository.deleteById('current');
-    } catch (error) {
-      console.log(error);
-    }
-    const newRelease = await this.automationReleaseRepository.create({
-      id: 'current',
-      url: release.url,
-      tagName: release.tag_name,
-      name: release.name,
-      createdAt: release.created_at,
-      publishedAt: release.published_at,
-      zipballUrl: release.zipball_url,
-      body: release.body,
-    });
-    res.json({
-      release: newRelease,
-      refArchs: success
-    });
+    return res;
   }
 
   @get('/architectures/public/version')
