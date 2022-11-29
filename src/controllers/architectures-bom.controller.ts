@@ -370,7 +370,6 @@ export class ArchitecturesBomController {
     @param.query.string('overwrite') overwrite: string,
     @param.query.boolean('public') publicArch: boolean
   ): Promise<object> {
-    console.log(publicArch);
     const user:any = req?.user;
     const email:string = user?.email;
     return new Promise<object>((resolve, reject) => {
@@ -382,7 +381,6 @@ export class ArchitecturesBomController {
           } else {
 
             const uploadedFiles = request.files;
-            console.log(uploadedFiles)
             const mapper = (f: globalThis.Express.Multer.File) => ({
               mimetype: f.mimetype,
               buffer: f.buffer,
@@ -403,7 +401,6 @@ export class ArchitecturesBomController {
               if (file.mimetype !== "application/x-yaml" && file.mimetype !== "text/yaml" && !file.name.endsWith('.yaml')) throw {message: "You must only upload YAML files."};
               if (file.size > 102400) throw {message: "Files must me <= 100Ko."};
             }
-            console.log(files);
             for (const file of files) {
               console.log(`Importing BOM ${file.name}`);
               const arch = await this.importYaml(file.buffer.toString(), overwrite, publicArch, email);

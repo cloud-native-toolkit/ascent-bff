@@ -4,12 +4,8 @@ const express = require("express");
 const axios = require('axios');
 
 const FormData = require('form-data');
-const multer = require('multer');
-const upload = multer();
 
 const app = (module.exports = express());
-// for parsing multipart/form-data
-app.use(upload.array());
 
 app.get('/health', (req, res, next) => {
     return res.status(200).send({
