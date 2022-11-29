@@ -6,7 +6,7 @@ import {
     billOfMaterialFromYaml, isBillOfMaterialModel,
     BillOfMaterialModule, BillOfMaterialEntry,
     Catalog, CatalogCategoryModel, CatalogLoader, ModuleSelector,
-    CatalogBuilder, BundleWriterType, getBundleWriter
+    CatalogBuilder, BundleWriterType, getBundleWriter, CustomResourceDefinition
 } from '@cloudnativetoolkit/iascable';
 
 import {
@@ -22,6 +22,7 @@ import { Architectures, Bom, Controls } from '../models';
 import catalogConfig from '../config/automation-catalog.config'
 import first from '../util/first';
 import axios from 'axios';
+import { uniq } from 'lodash';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -29,6 +30,35 @@ import axios from 'axios';
 
 const MODULES_KEY = 'automation-modules';
 const CATALOG_TIMEOUT_HOURS = 2;
+
+const loadCatalogUrls = (boms: CustomResourceDefinition[], inputUrls: string[]): string[] => {
+    return boms
+        .map(extractCatalogUrlsFromBom)
+        .reduce((previous: string[], current: string[]) => {
+            const result = previous.concat(current)
+
+            return uniq(result)
+        }, inputUrls)
+}
+const extractCatalogUrlsFromBom = (bom: CustomResourceDefinition): string[] => {
+    const annotations: any = bom.metadata?.annotations || {}
+
+    const catalogUrls: string[] = Object.keys(annotations)
+        .filter(key => /^catalog[Uu]rl.*/.test(key))
+        .reduce((result: string[], key: string) => {
+            if (/^catalog[Uu]rl$/.test(key)) {
+                const urls = annotations[key].split(',').filter((val: string) => !!val)
+
+                result.push(...urls)
+            } else if (annotations[key]) {
+                result.push(annotations[key])
+            }
+
+            return result
+        }, [])
+
+    return catalogUrls
+}
 
 export interface BomModule {
     name?: string;
@@ -146,7 +176,7 @@ export class ServicesHelper {
                         this.client.set(`automation-catalog-timeout`, Number(timeout).toString())
                             .finally(() => console.log(`Automation Catalog timeout stored in cache: ${timeout}`));
                     }
-                    fs.writeFileSync(`${process.cwd()}/.automation-catalog.ignore.yaml`,  JSON.stringify(catalog));
+                    fs.writeFileSync(`${process.cwd()}/.automation-catalog.ignore.yaml`, JSON.stringify(catalog));
                     this.catalog = new Catalog(catalog);
                     return resolve(this.catalog);
                 })
@@ -348,7 +378,7 @@ export class ServicesHelper {
     }
 
     async buildTerraform(architecture: Architectures, boms: Bom[], drawio?: S3.Body, png?: S3.Body): Promise<Buffer> {
-        const catalog = await this.getCatalog();
+        //const catalog = await this.getCatalog();
 
         // Future : Push to Object Store, Git, Create a Tile Dynamically
         const bomYaml: any = yaml.load(architecture.yaml);
@@ -361,17 +391,19 @@ export class ServicesHelper {
         });
 
         const bom = billOfMaterialFromYaml(yaml.dump(bomYaml), architecture.arch_id);
-        
+        const catalogUrls: string[] = loadCatalogUrls([bom], catalogConfig.catalogUrls);
+        const cat: Catalog = await this.catalogLoader.loadCatalog(catalogUrls);
+
         if (errors?.length) {
             console.log(errors);
             throw { message: `Error building some of the modules.`, details: errors };
         }
 
         // Lets build a BOM file from the BOM builder
-        
-        const iascableBundle = await this.catalogBuilder.buildBomsFromCatalog(catalog, [bom]);
+
+        const iascableBundle = await this.catalogBuilder.buildBomsFromCatalog(cat, [bom]);
         await iascableBundle.writeBundle(getBundleWriter(BundleWriterType.zip)).generate(`${process.cwd()}/.result.ignore.zip`);
-        
+
         return fs.readFileSync(`${process.cwd()}/.result.ignore.zip`);
     }
 
@@ -383,11 +415,11 @@ export class ServicesHelper {
         try {
             const catalog = await this.getCatalog();
             const catEntry = catalog.boms.find(entry => entry.name === solutionId && entry.type === 'solution');
-            let boms:string[] = [];
+            let boms: string[] = [];
             if (catEntry?.versions[0].metadataUrl) {
                 const yamlString = await (await axios.get(catEntry?.versions[0].metadataUrl)).data;
                 const obj = yaml.load(yamlString);
-                const stack:{ name: string }[] = obj?.spec?.stack;
+                const stack: { name: string }[] = obj?.spec?.stack;
                 for (const stackItem of stack) {
                     const stackItemCatEntry = catalog.boms.find(entry => entry.name === stackItem.name);
                     if (stackItemCatEntry?.type === 'solution') boms = [...boms, ...(await this.solutionBoms(stackItem.name))];
