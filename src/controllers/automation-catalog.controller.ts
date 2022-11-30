@@ -25,13 +25,13 @@ import { FILE_UPLOAD_SERVICE } from '../keys';
 import { FileUploadHandler } from '../types';
 import { ArchitecturesController, DiagramType } from './architectures.controller'
 
-import { ServicesHelper, Service } from '../helpers/services.helper';
+import { IascableService, Service } from '../services/iascable.service';
 import { S3 } from 'ibm-cos-sdk';
 
 
 export class AutomationCatalogController {
 
-  @Inject serviceHelper!: ServicesHelper;
+  @Inject iascableService!: IascableService;
   archController: ArchitecturesController;
 
   constructor(
@@ -54,12 +54,12 @@ export class AutomationCatalogController {
 
   @get('/automation/catalog')
   async catalogLoader(): Promise<object> {
-    return this.serviceHelper.getCatalog();
+    return this.iascableService.getCatalog();
   }
 
   @get('/automation/catalog/boms')
   async getBomsCatalog(): Promise<object> {
-    const catalog = JSON.parse(JSON.stringify(await this.serviceHelper.getCatalog()));
+    const catalog = JSON.parse(JSON.stringify(await this.iascableService.getCatalog()));
     delete catalog.modules;
     delete catalog.moduleIdAliases;
     delete catalog.flattenedAliases;
@@ -69,7 +69,7 @@ export class AutomationCatalogController {
   @get('/automation/ids')
   async getCatalogIDs(): Promise<object> {
     const data: Object[] = [];
-    const catalog = await this.serviceHelper.getCatalog();
+    const catalog = await this.iascableService.getCatalog();
     catalog.modules.forEach(module => {
       data.push({ name: module.name, id: module.id });
     });
@@ -80,7 +80,7 @@ export class AutomationCatalogController {
   async automationById(
     @param.path.string('id') id: string,
   ): Promise<Service> {
-    return this.serviceHelper.getService(id);
+    return this.iascableService.getService(id);
   }
 
   @get('/automation/{bomid}')
@@ -117,7 +117,7 @@ export class AutomationCatalogController {
       console.log(error);
     }
 
-    return this.serviceHelper.buildTerraform(architecture, automationBom, drawio, png);
+    return this.iascableService.buildTerraform(architecture, automationBom, drawio, png);
   }
 
   @get('/catalog/{id}')

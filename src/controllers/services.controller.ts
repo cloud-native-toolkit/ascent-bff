@@ -27,7 +27,7 @@ import { AutomationCatalogController } from '.';
 
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler} from '../types';
-import { ServicesHelper, Service } from '../helpers/services.helper';
+import { IascableService, Service } from '../services/iascable.service';
 
 import { serviceMapping } from '../service-mapping';
 
@@ -36,7 +36,7 @@ import { serviceMapping } from '../service-mapping';
 
 export class ServicesController {
 
-  @Inject serviceHelper!: ServicesHelper;
+  @Inject iascableService!: IascableService;
   automationCatalogController: AutomationCatalogController;
   catalogController: CatalogController;
 
@@ -76,7 +76,7 @@ export class ServicesController {
 
   @get('/services/count')
   async count(): Promise<Count> {
-    const services = await this.serviceHelper.getServices();
+    const services = await this.iascableService.getServices();
     return {
       count: services.length
     }
@@ -87,7 +87,7 @@ export class ServicesController {
     @param.filter(Services) filter?: Filter<Services>,
   ): Promise<Service[]> {
     const records = await this.servicesRepository.find(filter);
-    let services:Service[] = await this.serviceHelper.getServices();
+    let services:Service[] = await this.iascableService.getServices();
     if (filter) services = services.filter(service => records.findIndex(record => record.service_id === service.name) >= 0);
     for (let index = 0; index < services.length; index++) {
       let service = records.find(r => r.service_id === services[index].name);
@@ -153,7 +153,7 @@ export class ServicesController {
     @param.path.string('id') id: string,
     @param.filter(Services, { exclude: 'where' }) filter?: FilterExcludingWhere<Services>
   ): Promise<Service> {
-    let service = await this.serviceHelper.getService(id);
+    let service = await this.iascableService.getService(id);
     try {
       const serviceDetails = await this.servicesRepository.findById(id, filter);
       service = {...service, ...serviceDetails};

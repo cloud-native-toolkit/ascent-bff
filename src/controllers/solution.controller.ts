@@ -42,7 +42,7 @@ import {
 } from '../repositories';
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler, File} from '../types';
-import { ServicesHelper } from '../helpers/services.helper';
+import { IascableService } from '../services/iascable.service';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -58,7 +58,7 @@ interface PostBody {
 
 export class SolutionController {
 
-  @Inject serviceHelper!: ServicesHelper;
+  @Inject iascableService!: IascableService;
   private cos : Storage.S3;
   private automationCatalogController: AutomationCatalogController;
 
@@ -125,7 +125,7 @@ export class SolutionController {
     // Bind BOMs to solution
     let boms:string[] = body.architectures.map(a => a.arch_id);
     if (body.solutions) for (const sol of body.solutions) {
-      boms = [...boms, ...(await this.serviceHelper.solutionBoms(sol))];
+      boms = [...boms, ...(await this.iascableService.solutionBoms(sol))];
     }
     const archsWithDetails = [];
     boms = Array.from(new Set(boms)).sort((a,b) => a < b ? -1 : 1);
@@ -361,47 +361,34 @@ This solution was built with the [Techzone Deployer](https://builder.techzone.ib
     try {
 
       // Create zip
-      const zip = new AdmZip();
+      // const zip = new AdmZip();
 
-      // Build automation for each ref. arch
-      if (solution.architectures) for (const arch of solution.architectures) {
-        console.log(`Building automation for ${arch.arch_id}`);
-        // zip.addFile(`${arch.arch_id}/`, null);
-        const archZipBuffer = await this.automationCatalogController.downloadAutomationZip(arch.arch_id, res);
-        if (archZipBuffer instanceof Buffer) {
-          const archZip = new AdmZip(archZipBuffer);
-          for (const entry of archZip.getEntries()) {
-            zip.addFile(`${arch.arch_id}/${entry.rawEntryName.toString()}`, entry.getData());
-          }
-        } else {
-          return res.status(400).send({error: {message: `Error loading zip for architecture ${arch.arch_id}`}});
-        }
-      }
+      return await this.iascableService.buildSolution(solution);
 
-      // Add files from COS
-      try {
-        let objects = this.cos ? (await this.cos.listObjects({
-          Bucket: BUCKET_NAME
-        }).promise()).Contents : [];
-        if (objects) {
-          objects = objects.filter(file => file.Key?.startsWith(`solutions/${id}/`));
-        }
-        if (objects) for (const object of objects) {
-          if (object.Key) {
-            const cosObj = this.cos ? (await this.cos.getObject({
-              Bucket: BUCKET_NAME,
-              Key: object.Key
-            }).promise()).Body : '';
-            if (cosObj) zip.addFile(object.Key?.replace(`solutions/${id}/`, ''), new Buffer(cosObj.toString()));
-          }
-        }
-      } catch (error) {
-        console.log(error);
-      }
+      // // Add files from COS
+      // try {
+      //   let objects = this.cos ? (await this.cos.listObjects({
+      //     Bucket: BUCKET_NAME
+      //   }).promise()).Contents : [];
+      //   if (objects) {
+      //     objects = objects.filter(file => file.Key?.startsWith(`solutions/${id}/`));
+      //   }
+      //   if (objects) for (const object of objects) {
+      //     if (object.Key) {
+      //       const cosObj = this.cos ? (await this.cos.getObject({
+      //         Bucket: BUCKET_NAME,
+      //         Key: object.Key
+      //       }).promise()).Body : '';
+      //       if (cosObj) zip.addFile(object.Key?.replace(`solutions/${id}/`, ''), new Buffer(cosObj.toString()));
+      //     }
+      //   }
+      // } catch (error) {
+      //   console.log(error);
+      // }
 
-      console.log(zip.getEntries().map(entry => entry.entryName));
+      // console.log(zip.getEntries().map(entry => entry.entryName));
 
-      return zip.toBuffer();
+      // return zip.toBuffer();
 
     } catch (e:any) {
       console.log(e);

@@ -40,7 +40,7 @@ import { BomController } from '.';
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler, File} from '../types';
 
-import { ServicesHelper } from '../helpers/services.helper';
+import { IascableService } from '../services/iascable.service';
 
 import { Document as PDFDocument, Image, cm, Font } from "pdfjs";
 import Jimp from "jimp";
@@ -54,7 +54,7 @@ import axios from 'axios';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export class ArchitecturesBomController {
-  @Inject serviceHelper!: ServicesHelper;
+  @Inject iascableService!: IascableService;
   bomController: BomController;
   archController: ArchitecturesController;
 
@@ -87,7 +87,7 @@ export class ArchitecturesBomController {
     publicArch: boolean,
     email?: string,
   ) => {
-    const { arch, boms } = await this.serviceHelper.parseBomYaml(yamlString, publicArch);
+    const { arch, boms } = await this.iascableService.parseBomYaml(yamlString, publicArch);
     // Try to get corresponding architecture
     let curArch:Architectures;
     let archExists = false;
@@ -341,7 +341,7 @@ export class ArchitecturesBomController {
     @inject(RestBindings.Http.RESPONSE) res: Response,
   ): Promise<Bom|Response> {
     if (bom.yaml) {
-      await this.serviceHelper.validateBomModuleYaml(bom.yaml, bom.service_id);
+      await this.iascableService.validateBomModuleYaml(bom.yaml, bom.service_id);
     } else {
       bom.yaml = `name: ${bom.service_id}\n`
     }
@@ -418,7 +418,7 @@ export class ArchitecturesBomController {
 
   @post('/architectures/public/sync')
   async syncRefArchs(): Promise<Architectures[]> {
-    const boms = await this.serviceHelper.getBoms();
+    const boms = await this.iascableService.getBoms();
     const res:Architectures[] = [];
     for (const bom of boms) {
       if (bom.type === 'bom') {

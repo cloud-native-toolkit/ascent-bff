@@ -6,7 +6,7 @@ import {
     billOfMaterialFromYaml, isBillOfMaterialModel,
     BillOfMaterialModule, BillOfMaterialEntry,
     Catalog, CatalogCategoryModel, CatalogLoader, ModuleSelector,
-    CatalogBuilder, BundleWriterType, getBundleWriter, CustomResourceDefinition
+    CatalogBuilder, BundleWriterType, getBundleWriter, CustomResourceDefinition, SolutionModel
 } from '@cloudnativetoolkit/iascable';
 
 import {
@@ -18,7 +18,7 @@ import yaml from 'js-yaml';
 import { S3 } from 'ibm-cos-sdk';
 
 import { semanticVersionDescending, semanticVersionFromString } from '../util/semantic-version';
-import { Architectures, Bom, Controls } from '../models';
+import { Architectures, Bom, Controls, Solution } from '../models';
 import catalogConfig from '../config/automation-catalog.config'
 import first from '../util/first';
 import axios from 'axios';
@@ -148,7 +148,7 @@ const servicesFromCatalog = (catalog: Catalog) => {
     return unique(services);
 }
 
-export class ServicesHelper {
+export class IascableService {
     @Inject catalogLoader!: CatalogLoader;
     @Inject moduleSelector!: ModuleSelector;
     @Inject catalogBuilder!: CatalogBuilder;
@@ -404,6 +404,38 @@ export class ServicesHelper {
         const iascableBundle = await this.catalogBuilder.buildBomsFromCatalog(cat, [bom]);
         await iascableBundle.writeBundle(getBundleWriter(BundleWriterType.zip)).generate(`${process.cwd()}/.result.ignore.zip`);
 
+        return fs.readFileSync(`${process.cwd()}/.result.ignore.zip`);
+    }
+
+    async buildSolution(solution: Solution) {
+        const sol:SolutionModel = {
+            apiVersion: 'cloudnativetoolkit.dev/v2',
+            kind: 'Solution',
+            metadata: {
+                name: solution.name,
+                annotations: {
+                  displayName: solution.short_desc,
+                  description: solution.long_desc
+                }
+            },
+            spec: {
+                stack: [],
+                version: 'v1.0.0',
+                variables: [],
+                files: []
+            }
+        };
+        for (const arch of solution.architectures) {
+            sol.spec.stack.push({
+                name: arch.arch_id,
+                layer: yaml.load(arch.yaml)?.metadata?.labels?.type ?? 'infrastructure',
+                description: arch.long_desc ?? arch.short_desc
+            });
+        }
+        const catalogUrls: string[] = loadCatalogUrls([sol], catalogConfig.catalogUrls);
+        const cat: Catalog = await this.catalogLoader.loadCatalog(catalogUrls);
+        const iascableBundle = await this.catalogBuilder.buildBomsFromCatalog(cat, [sol]);
+        await iascableBundle.writeBundle(getBundleWriter(BundleWriterType.zip)).generate(`${process.cwd()}/.result.ignore.zip`);
         return fs.readFileSync(`${process.cwd()}/.result.ignore.zip`);
     }
 

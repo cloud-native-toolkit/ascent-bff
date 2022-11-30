@@ -27,7 +27,7 @@ import { ArchitecturesRepository, BomRepository, ServicesRepository, ControlMapp
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler} from '../types';
 
-import { ServicesHelper } from '../helpers/services.helper';
+import { IascableService } from '../services/iascable.service';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -68,7 +68,7 @@ export interface BomComposite {
 }
 
 export class BomController {
-  @Inject serviceHelper!: ServicesHelper;
+  @Inject iascableService!: IascableService;
   automationCatalogController: AutomationCatalogController;
   servicesController: ServicesController;
 
@@ -104,7 +104,7 @@ export class BomController {
     @inject(RestBindings.Http.RESPONSE) res: Response,
   ): Promise<Bom|Response> {
     if (bom.yaml) {
-      await this.serviceHelper.validateBomModuleYaml(bom.yaml, bom.service_id);
+      await this.iascableService.validateBomModuleYaml(bom.yaml, bom.service_id);
     } else {
       bom.yaml = `name: ${bom.service_id}\n`
     }
@@ -131,7 +131,7 @@ export class BomController {
     description: 'Bom Catalog',
   })
   async findCatalog(): Promise<any> {
-    return this.serviceHelper.getBomsCatalog();
+    return this.iascableService.getBomsCatalog();
   }
 
   @patch('/boms')
@@ -205,7 +205,7 @@ export class BomController {
   ): Promise<Bom|Response> {
     if (bom.yaml) {
       const fullBom = await this.bomRepository.findById(id);
-      await this.serviceHelper.validateBomModuleYaml(bom.yaml, fullBom.service_id);
+      await this.iascableService.validateBomModuleYaml(bom.yaml, fullBom.service_id);
     }
     await this.bomRepository.updateById(id, bom);
     return this.bomRepository.findById(id);
