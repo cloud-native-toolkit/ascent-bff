@@ -307,7 +307,9 @@ This solution was built with the [Techzone Deployer](https://builder.techzone.ib
         public: true
       }
     }
-    return this.solutionRepository.find(publicFilter);
+    const catalog = await this.iascableService.getCatalog();
+    const solutions = (await this.solutionRepository.find(publicFilter)).filter(sol => catalog.boms.findIndex(catEntry => catEntry.name === sol.id) >= 0);
+    return solutions;
   }
 
   @get('/solutions/{id}')

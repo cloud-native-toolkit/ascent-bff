@@ -27,6 +27,7 @@ import {
 } from '../repositories';
 import { FILE_UPLOAD_SERVICE } from '../keys';
 import { FileUploadHandler, File } from '../types';
+import { IascableService } from '../services/iascable.service';
 
 import * as _ from 'lodash';
 import { Services } from '../appenv';
@@ -37,6 +38,7 @@ import yaml from 'js-yaml';
 import Jimp from "jimp";
 
 import util from 'util';
+import { Inject } from 'typescript-ioc';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/naming-convention */
@@ -50,6 +52,7 @@ const INSTANCE_ID = process.env.INSTANCE_ID;
 
 export class ArchitecturesController {
 
+  @Inject iascableService!: IascableService;
   private cos: Storage.S3;
   private bucketName: Storage.S3.BucketName;
 
@@ -370,7 +373,9 @@ export class ArchitecturesController {
     },
   })
   async find(): Promise<Architectures[]> {
-    return this.architecturesRepository.find({ include: ["owners"], where: { public: true } });
+    const catalog = await this.iascableService.getCatalog();
+    const archs = (await this.architecturesRepository.find({ include: ["owners"], where: { public: true } })).filter(arch => catalog.boms.findIndex(catEntry => catEntry.name === arch.arch_id) >= 0);
+    return archs;
   }
 
   @patch('/architectures')
