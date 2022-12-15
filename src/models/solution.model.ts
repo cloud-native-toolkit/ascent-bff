@@ -58,6 +58,11 @@ export class Solution extends Entity {
   })
   architectures: Architectures[];
 
+  @property({
+    type: 'string',
+  })
+  yaml: string;
+
   @hasMany(() => User, {
     through: {
       model: () => UserSolutions,

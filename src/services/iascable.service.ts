@@ -365,6 +365,34 @@ export class IascableService {
     }
 
     /**
+     * Parse Solution yaml
+     * @returns Solution models generated from yaml
+     */
+    async parseSolutionYaml(yamlString: string, publicSol: boolean): Promise<Solution> {
+        let sol;
+        try {
+            sol = billOfMaterialFromYaml(yamlString);
+        } catch (error) {
+            throw { message: `Failed to load solution yaml`, details: error };
+        }
+        if (!isBillOfMaterialModel(sol)) {
+            const solYaml:any = yaml.load(yamlString);
+            delete solYaml.spec.stack;
+            const newSol:Solution = new Solution({
+                id: solYaml.metadata?.name,
+                name: `${solYaml.metadata?.annotations?.displayName ?? solYaml.metadata?.name}`,
+                short_desc: solYaml.metadata?.annotations?.description ?? `${solYaml.metadata?.annotations?.displayName ?? solYaml.metadata?.name} Solution.`,
+                long_desc: solYaml.metadata?.annotations?.description ?? `${solYaml.metadata?.annotations?.displayName ?? solYaml.metadata?.name} Solution.`,
+                public: publicSol,
+                techzone: false,
+                platform: solYaml.metadata?.labels?.platform,
+                yaml: yaml.dump(solYaml)
+            });
+            return newSol;
+        } else throw { message: `Must be a solution yaml, not a bom.` };
+    }
+
+    /**
      * Validate BOM module yaml config
      * @returns Arch and Boms models generated from yaml
      */
@@ -408,23 +436,32 @@ export class IascableService {
     }
 
     async buildSolution(solution: Solution) {
-        const sol:SolutionModel = {
-            apiVersion: 'cloudnativetoolkit.dev/v2',
-            kind: 'Solution',
-            metadata: {
-                name: solution.name,
-                annotations: {
-                  displayName: solution.short_desc,
-                  description: solution.long_desc
-                }
-            },
-            spec: {
-                stack: [],
-                version: 'v1.0.0',
-                variables: [],
-                files: []
+        let sol:SolutionModel;
+        try {
+            if (solution.yaml) {
+                sol = yaml.load(solution.yaml);
+                sol.spec.stack = [];
             }
-        };
+            else throw new Error("Solution yaml not found");
+        } catch (error) {
+            sol = {
+                apiVersion: 'cloudnativetoolkit.dev/v2',
+                kind: 'Solution',
+                metadata: {
+                    name: solution.name,
+                    annotations: {
+                      displayName: solution.short_desc,
+                      description: solution.long_desc
+                    }
+                },
+                spec: {
+                    stack: [],
+                    version: 'v1.0.0',
+                    variables: [],
+                    files: []
+                }
+            };
+        }
         for (const arch of solution.architectures) {
             sol.spec.stack.push({
                 name: arch.arch_id,

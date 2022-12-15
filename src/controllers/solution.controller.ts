@@ -25,7 +25,7 @@ import  AdmZip = require("adm-zip");
 
 import { AutomationCatalogController } from '../controllers';
 
-import YAML from 'yaml';
+import yaml from 'js-yaml';
 
 import { Inject } from 'typescript-ioc';
 import {Services} from '../appenv';
@@ -43,6 +43,7 @@ import {
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler, File} from '../types';
 import { IascableService } from '../services/iascable.service';
+import axios from 'axios';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -104,6 +105,41 @@ export class SolutionController {
 
   }
 
+  importYaml = async (
+    yamlString:string,
+    overwrite: string,
+    publicSol: boolean,
+    email?: string,
+  ) => {
+    const solution = await this.iascableService.parseSolutionYaml(yamlString, publicSol);
+    // Try to get corresponding solution
+    let curSol:Solution;
+    let solExists = false;
+    try {
+      curSol = await this.solutionRepository.findById(solution.id);
+      if (!curSol) throw new Error();
+      solExists = true;
+    } catch (getArchError) {
+      console.log(`Solution ${solution.id} does not exist, creating it...`);
+    }
+    // eslint-disable-next-line no-throw-literal
+    if (solExists && !overwrite) throw { message: `Solution ${solution.id} already exists. Set 'overwrite' parameter to overwrite.` };
+    // Delete Existing Solution
+    if (solExists) await this.solutionRepository.deleteById(solution.id);
+    // Create solution
+    if (email) await this.userRepository.solutions(email).create(solution);
+    else await this.solutionRepository.create(solution);
+    // Bind boms to solution
+    for (const bom of yaml.load(yamlString).spec.stack) {
+      try {
+        await this.solutionRepository.architectures(solution.id).link(bom.name);
+      } catch (error) {
+        console.log(`Error linking ${bom.name} to solution ${solution.id}`, error);
+      }
+    }
+    return solution;
+  }
+
   @post('/solutions')
   async create (
     @requestBody()
@@ -114,6 +150,18 @@ export class SolutionController {
     const user:any = req?.user;
     const email:string = user?.email;
     let newSolution:Solution;
+    if (body?.solution?.yaml) {
+      try {
+        yaml.load(body?.solution?.yaml);
+      } catch (error) {
+        return res.status(400).send({
+          error: {
+            message: "Error parsing solution yaml",
+            details: error
+          }
+        });
+      }
+    }
     try {
       if (email) newSolution = await this.userRepository.solutions(email).create(body.solution);
       else newSolution = await this.solutionRepository.create(body.solution);
@@ -133,7 +181,7 @@ export class SolutionController {
       await this.solutionRepository.architectures(newSolution.id).link(bom);
       try {
         const archObj = await this.architecturesRepository.findById(bom);
-        archsWithDetails.push({ ...archObj, type: YAML.parse(archObj.yaml)?.metadata?.labels?.type });
+        archsWithDetails.push({ ...archObj, type: yaml.load(archObj.yaml)?.metadata?.labels?.type });
       } catch (error) {
         console.log(error);
       }
@@ -405,6 +453,18 @@ This solution was built with the [Techzone Deployer](https://builder.techzone.ib
     @inject(RestBindings.Http.REQUEST) req: any,
     @inject(RestBindings.Http.RESPONSE) res: Response,
   ): Promise<Solution|object> {
+    if (body?.solution?.yaml) {
+      try {
+        yaml.load(body?.solution?.yaml);
+      } catch (error) {
+        return res.status(400).send({
+          error: {
+            message: "Error parsing solution yaml",
+            details: error
+          }
+        });
+      }
+    }
     await this.solutionRepository.updateById(id, body.solution);
     if (body.architectures?.length) {
       for (const arch of await this.solutionRepository.architectures(id).find()) {
@@ -458,5 +518,19 @@ This solution was built with the [Techzone Deployer](https://builder.techzone.ib
       return res.status(409).send(e?.message);
     }
 
+  }
+
+  @post('/solutions/public/sync')
+  async syncSolutions(): Promise<Solution[]> {
+    const cat = await this.iascableService.getBoms();
+    const res:Solution[] = [];
+    for (const catEntry of cat) {
+      if (catEntry.type === 'solution') {
+        console.log(`Syncing ${catEntry.name}`);
+        const yamlString:string = await (await axios.get(catEntry?.versions[0].metadataUrl)).data;
+        res.push(await this.importYaml(yamlString, 'true', true));
+      }
+    }
+    return res;
   }
 }
