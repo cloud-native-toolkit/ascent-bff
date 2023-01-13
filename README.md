@@ -1,6 +1,6 @@
 # Ascent BFF
 
-This repository contains the Back-End micro-service of the Ascent tool.
+This repository contains the Back-End micro-service of the Ascent tool (TechZone Deployer - Builder).
 
 Ascent is a tool created by the IBM Ecosystem Lab to accelerate the adoption of IBM Software on Hybrid Cloud. Through automation and integration, Ascent enables enterprises to deliver compliant cloud architectures which can be clearly evidenced and communicated with Governance, Risk and Compliance teams.
 
