@@ -25,8 +25,9 @@ import  AdmZip = require("adm-zip");
 
 import { AutomationCatalogController } from '../controllers';
 
-import YAML from 'yaml';
+import yaml from 'js-yaml';
 
+import { Inject } from 'typescript-ioc';
 import {Services} from '../appenv';
 
 import {
@@ -41,6 +42,8 @@ import {
 } from '../repositories';
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler, File} from '../types';
+import { IascableService } from '../services/iascable.service';
+import axios from 'axios';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -49,11 +52,14 @@ const BUCKET_NAME = `ascent-storage-${INSTANCE_ID}`;
 
 interface PostBody {
   solution: Solution,
-  architectures: Architectures[]
+  architectures: Architectures[],
+  solutions: string[],
+  platform: string
 }
 
 export class SolutionController {
 
+  @Inject iascableService!: IascableService;
   private cos : Storage.S3;
   private automationCatalogController: AutomationCatalogController;
 
@@ -99,16 +105,63 @@ export class SolutionController {
 
   }
 
+  importYaml = async (
+    yamlString:string,
+    overwrite: string,
+    publicSol: boolean,
+    email?: string,
+  ) => {
+    const solution = await this.iascableService.parseSolutionYaml(yamlString, publicSol);
+    // Try to get corresponding solution
+    let curSol:Solution;
+    let solExists = false;
+    try {
+      curSol = await this.solutionRepository.findById(solution.id);
+      if (!curSol) throw new Error();
+      solExists = true;
+    } catch (getArchError) {
+      console.log(`Solution ${solution.id} does not exist, creating it...`);
+    }
+    // eslint-disable-next-line no-throw-literal
+    if (solExists && !overwrite) throw { message: `Solution ${solution.id} already exists. Set 'overwrite' parameter to overwrite.` };
+    // Delete Existing Solution
+    if (solExists) await this.solutionRepository.deleteById(solution.id);
+    // Create solution
+    if (email) await this.userRepository.solutions(email).create(solution);
+    else await this.solutionRepository.create(solution);
+    // Bind boms to solution
+    for (const bom of yaml.load(yamlString).spec.stack) {
+      try {
+        await this.solutionRepository.architectures(solution.id).link(bom.name);
+      } catch (error) {
+        console.log(`Error linking ${bom.name} to solution ${solution.id}`, error);
+      }
+    }
+    return solution;
+  }
+
   @post('/solutions')
-  async create(
+  async create (
     @requestBody()
     body: PostBody,
     @inject(RestBindings.Http.REQUEST) req: any,
     @inject(RestBindings.Http.RESPONSE) res: Response,
-  ): Promise<Solution|object> {
+  ) : Promise<Solution|object> {
     const user:any = req?.user;
     const email:string = user?.email;
     let newSolution:Solution;
+    if (body?.solution?.yaml) {
+      try {
+        yaml.load(body?.solution?.yaml);
+      } catch (error) {
+        return res.status(400).send({
+          error: {
+            message: "Error parsing solution yaml",
+            details: error
+          }
+        });
+      }
+    }
     try {
       if (email) newSolution = await this.userRepository.solutions(email).create(body.solution);
       else newSolution = await this.solutionRepository.create(body.solution);
@@ -118,13 +171,17 @@ export class SolutionController {
     }
 
     // Bind BOMs to solution
+    let boms:string[] = body.architectures.map(a => a.arch_id);
+    if (body.solutions) for (const sol of body.solutions) {
+      boms = [...boms, ...(await this.iascableService.solutionBoms(sol))];
+    }
     const archsWithDetails = [];
-    body.architectures = body.architectures.sort((a,b) => a.arch_id < b.arch_id ? -1 : 1);
-    for (const arch of body.architectures) {
-      await this.solutionRepository.architectures(newSolution.id).link(arch.arch_id);
+    boms = Array.from(new Set(boms)).sort((a,b) => a < b ? -1 : 1);
+    for (const bom of boms) {
+      await this.solutionRepository.architectures(newSolution.id).link(bom);
       try {
-        const archObj = await this.architecturesRepository.findById(arch.arch_id);
-        archsWithDetails.push({ ...archObj, type: YAML.parse(archObj.yaml)?.metadata?.labels?.type });
+        const archObj = await this.architecturesRepository.findById(bom);
+        archsWithDetails.push({ ...archObj, type: yaml.load(archObj.yaml)?.metadata?.labels?.type });
       } catch (error) {
         console.log(error);
       }
@@ -132,8 +189,6 @@ export class SolutionController {
     // Creates default README
     const readme = `
 # Solution: ${newSolution.name}
-
-Please return to [your solution](https://builder.cloudnativetoolkit.dev/solutions/${newSolution.id}) to make changes.
 
 This collection of terraform automation bundles has been crafted from a set of Terraform modules created by Ecosytem Lab team part of the IBM Strategic Partnership.
 
@@ -164,7 +219,7 @@ ${archsWithDetails.filter(arch => arch.type !== 'software').map(arch => `| ${arc
 ${archsWithDetails.filter(arch => arch.type === 'software').map(arch => `| ${arch.arch_id} | [${arch.name}](https://builder.cloudnativetoolkit.dev/boms/${arch.arch_id}) | ${arch.short_desc} |`).join('\n')}
 
 
-This solution was built with the [Techzone Accelerator Toolkit](https://builder.cloudnativetoolkit.dev/).
+This solution was built with the [Techzone Deployer](https://builder.techzone.ibm.com).
 
     `
     // Put default readme for solution
@@ -252,7 +307,9 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
         public: true
       }
     }
-    return this.solutionRepository.find(publicFilter);
+    const catalog = await this.iascableService.getCatalog();
+    const solutions = (await this.solutionRepository.find(publicFilter)).filter(sol => catalog.boms.findIndex(catEntry => catEntry.name === sol.id) >= 0);
+    return solutions;
   }
 
   @get('/solutions/{id}')
@@ -354,47 +411,34 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
     try {
 
       // Create zip
-      const zip = new AdmZip();
+      // const zip = new AdmZip();
 
-      // Build automation for each ref. arch
-      if (solution.architectures) for (const arch of solution.architectures) {
-        console.log(`Building automation for ${arch.arch_id}`);
-        // zip.addFile(`${arch.arch_id}/`, null);
-        const archZipBuffer = await this.automationCatalogController.downloadAutomationZip(arch.arch_id, res);
-        if (archZipBuffer instanceof Buffer) {
-          const archZip = new AdmZip(archZipBuffer);
-          for (const entry of archZip.getEntries()) {
-            zip.addFile(`${arch.arch_id}/${entry.rawEntryName.toString()}`, entry.getData());
-          }
-        } else {
-          return res.status(400).send({error: {message: `Error loading zip for architecture ${arch.arch_id}`}});
-        }
-      }
+      return await this.iascableService.buildSolution(solution);
 
-      // Add files from COS
-      try {
-        let objects = this.cos ? (await this.cos.listObjects({
-          Bucket: BUCKET_NAME
-        }).promise()).Contents : [];
-        if (objects) {
-          objects = objects.filter(file => file.Key?.startsWith(`solutions/${id}/`));
-        }
-        if (objects) for (const object of objects) {
-          if (object.Key) {
-            const cosObj = this.cos ? (await this.cos.getObject({
-              Bucket: BUCKET_NAME,
-              Key: object.Key
-            }).promise()).Body : '';
-            if (cosObj) zip.addFile(object.Key?.replace(`solutions/${id}/`, ''), new Buffer(cosObj.toString()));
-          }
-        }
-      } catch (error) {
-        console.log(error);
-      }
+      // // Add files from COS
+      // try {
+      //   let objects = this.cos ? (await this.cos.listObjects({
+      //     Bucket: BUCKET_NAME
+      //   }).promise()).Contents : [];
+      //   if (objects) {
+      //     objects = objects.filter(file => file.Key?.startsWith(`solutions/${id}/`));
+      //   }
+      //   if (objects) for (const object of objects) {
+      //     if (object.Key) {
+      //       const cosObj = this.cos ? (await this.cos.getObject({
+      //         Bucket: BUCKET_NAME,
+      //         Key: object.Key
+      //       }).promise()).Body : '';
+      //       if (cosObj) zip.addFile(object.Key?.replace(`solutions/${id}/`, ''), new Buffer(cosObj.toString()));
+      //     }
+      //   }
+      // } catch (error) {
+      //   console.log(error);
+      // }
 
-      console.log(zip.getEntries().map(entry => entry.entryName));
+      // console.log(zip.getEntries().map(entry => entry.entryName));
 
-      return zip.toBuffer();
+      // return zip.toBuffer();
 
     } catch (e:any) {
       console.log(e);
@@ -411,6 +455,18 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
     @inject(RestBindings.Http.REQUEST) req: any,
     @inject(RestBindings.Http.RESPONSE) res: Response,
   ): Promise<Solution|object> {
+    if (body?.solution?.yaml) {
+      try {
+        yaml.load(body?.solution?.yaml);
+      } catch (error) {
+        return res.status(400).send({
+          error: {
+            message: "Error parsing solution yaml",
+            details: error
+          }
+        });
+      }
+    }
     await this.solutionRepository.updateById(id, body.solution);
     if (body.architectures?.length) {
       for (const arch of await this.solutionRepository.architectures(id).find()) {
@@ -464,5 +520,19 @@ This solution was built with the [Techzone Accelerator Toolkit](https://builder.
       return res.status(409).send(e?.message);
     }
 
+  }
+
+  @post('/solutions/public/sync')
+  async syncSolutions(): Promise<Solution[]> {
+    const cat = await this.iascableService.getBoms();
+    const res:Solution[] = [];
+    for (const catEntry of cat) {
+      if (catEntry.type === 'solution') {
+        console.log(`Syncing ${catEntry.name}`);
+        const yamlString:string = await (await axios.get(catEntry?.versions[0].metadataUrl)).data;
+        res.push(await this.importYaml(yamlString, 'true', true));
+      }
+    }
+    return res;
   }
 }

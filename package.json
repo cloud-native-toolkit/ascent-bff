@@ -40,7 +40,6 @@
     "rebuild": "npm run clean && npm run compile",
     "serve": "NODE_ENV=staging node .",
     "scan": "detect-secrets scan --update .secrets.baseline --exclude-files 'package-lock.json'"
-
   },
   "repository": {
     "type": "git",
@@ -55,7 +54,7 @@
     "!*/__tests__"
   ],
   "dependencies": {
-    "@cloudnativetoolkit/iascable": "^2.20.0",
+    "@cloudnativetoolkit/iascable": "^3.0.1",
     "@loopback/boot": "^5.0.4",
     "@loopback/core": "^4.0.4",
     "@loopback/repository": "^5.0.4",

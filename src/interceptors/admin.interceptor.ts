@@ -12,6 +12,7 @@ import {
   // List of protected resources
   const protectedTargets = [
     'ArchitecturesBomController.prototype.syncRefArchs',
+    'SolutionController.prototype.syncSolutions',
     'OnBoardingStageController.prototype.create',
     'OnBoardingStageController.prototype.updateAll',
     'OnBoardingStageController.prototype.updateById',

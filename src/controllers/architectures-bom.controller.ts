@@ -37,14 +37,10 @@ import {
 } from '../repositories';
 import { BomController } from '.';
 
-import catalogConfig from '../config/catalog.config'
-
-import AdmZip = require("adm-zip");
-
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler, File} from '../types';
 
-import { ServicesHelper } from '../helpers/services.helper';
+import { IascableService } from '../services/iascable.service';
 
 import { Document as PDFDocument, Image, cm, Font } from "pdfjs";
 import Jimp from "jimp";
@@ -53,14 +49,12 @@ import fs from "fs";
 import { ArchitecturesController, DiagramType } from './architectures.controller'
 import axios from 'axios';
 
-const latestReleaseUrl = catalogConfig.latestReleaseUrl;
-
 /* eslint-disable no-throw-literal */
 /* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export class ArchitecturesBomController {
-  @Inject serviceHelper!: ServicesHelper;
+  @Inject iascableService!: IascableService;
   bomController: BomController;
   archController: ArchitecturesController;
 
@@ -93,7 +87,7 @@ export class ArchitecturesBomController {
     publicArch: boolean,
     email?: string,
   ) => {
-    const { arch, boms } = await this.serviceHelper.parseBomYaml(yamlString, publicArch);
+    const { arch, boms } = await this.iascableService.parseBomYaml(yamlString, publicArch);
     // Try to get corresponding architecture
     let curArch:Architectures;
     let archExists = false;
@@ -347,67 +341,11 @@ export class ArchitecturesBomController {
     @inject(RestBindings.Http.RESPONSE) res: Response,
   ): Promise<Bom|Response> {
     if (bom.yaml) {
-      await this.serviceHelper.validateBomModuleYaml(bom.yaml, bom.service_id);
+      await this.iascableService.validateBomModuleYaml(bom.yaml, bom.service_id);
     } else {
       bom.yaml = `name: ${bom.service_id}\n`
     }
     return this.architecturesRepository.boms(id).create(bom);
-  }
-
-  @get('/architectures/boms/details', {
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: {
-              type: 'object',
-            },
-          },
-        },
-        description: 'Enriched information about a bom',
-      },
-    },
-  })
-  async enrichBomYaml(
-    @requestBody.file()
-    request: Request,
-    @inject(RestBindings.Http.REQUEST) req: any,
-    @inject(RestBindings.Http.RESPONSE) res: Response,
-  ): Promise<object> {
-    return new Promise<object>((resolve, reject) => {
-      this.fileHandler(request, res,(err: unknown) => {
-          if (err) {
-            throw err;
-          } else {
-
-            const uploadedFiles = request.files;
-            const mapper = (f: globalThis.Express.Multer.File) => ({
-              mimetype: f.mimetype,
-              buffer: f.buffer,
-              size: f.size,
-              fieldname: f.fieldname,
-              name: f.originalname
-            });
-            let files: File[] = [];
-            if (Array.isArray(uploadedFiles)) {
-              files = uploadedFiles.map(mapper);
-            } else {
-              for (const filename in uploadedFiles) {
-                files.push(...uploadedFiles[filename].map(mapper));
-              }
-            }
-            // Check uploaded files
-            if (files.length < 1) throw {message: "You must upload at least 1 file."};
-            for (const file of files) {
-              if (file.mimetype !== "application/x-yaml" && file.mimetype !== "text/yaml" && !file.name.endsWith('.yaml')) throw {message: "You must only upload YAML files."};
-              if (file.size > 102400) throw {message: "Files must me <= 100Ko."};
-            }
-            this.serviceHelper.enrichBomYaml(files[0].buffer.toString())
-            .then(bomJson => resolve(res.status(200).send(bomJson)))
-            .catch(console.error);
-          }
-      });
-    });
   }
 
   @post('/architectures/boms/import', {
@@ -432,7 +370,6 @@ export class ArchitecturesBomController {
     @param.query.string('overwrite') overwrite: string,
     @param.query.boolean('public') publicArch: boolean
   ): Promise<object> {
-    console.log(publicArch);
     const user:any = req?.user;
     const email:string = user?.email;
     return new Promise<object>((resolve, reject) => {
@@ -464,7 +401,6 @@ export class ArchitecturesBomController {
               if (file.mimetype !== "application/x-yaml" && file.mimetype !== "text/yaml" && !file.name.endsWith('.yaml')) throw {message: "You must only upload YAML files."};
               if (file.size > 102400) throw {message: "Files must me <= 100Ko."};
             }
-            console.log(files);
             for (const file of files) {
               console.log(`Importing BOM ${file.name}`);
               const arch = await this.importYaml(file.buffer.toString(), overwrite, publicArch, email);
@@ -481,69 +417,17 @@ export class ArchitecturesBomController {
   }
 
   @post('/architectures/public/sync')
-  async syncRefArchs(
-    @inject(RestBindings.Http.RESPONSE) res: Response,
-  ): Promise<object|void> {
-    // Get latest iascable release 
-    const release = (await axios(latestReleaseUrl)).data;
-    try {
-      const curRelease = await this.automationReleaseRepository.findById('current');
-      if (curRelease.tagName === release.tag_name) return res.status(400).send({
-        error: { message: `iascable is up to date: version ${release.tag_name}` }
-      });
-    } catch (error) {
-      console.log(error);
-    }
-    
-    // Get latest release ZIP archive
-    const zip = new AdmZip((await axios(release.zipball_url)).data);
-    const zipEntries = zip.getEntries();
-    const success:Architectures[] = [];
-    for (const zipEntry of zipEntries) {
-      // Get ref-arch BOMs
-      if (!zipEntry.isDirectory && zipEntry.entryName.match(/.*\/ref-arch\/.*.yaml$/g)) {
-        const arch_id = zipEntry.name.split(".yaml")[0];
-        console.log(`Syncing BOM ${arch_id} from iascable ${release.tag_name}`);
-        let arch:Architectures;
-        try {
-          arch = await this.architecturesRepository.findById(arch_id);
-        } catch (error) {
-          console.log(`Architecture ${arch_id} does not exist, create it`);
-        }
-        try {
-          arch = await this.importYaml(
-            zipEntry.getData().toString(),
-            "true",
-            true
-          );
-          success.push(arch);
-        } catch (error) {
-          console.log(error);
-          return res.status(400).send({error: error});
-        }
+  async syncRefArchs(): Promise<Architectures[]> {
+    const boms = await this.iascableService.getBoms();
+    const res:Architectures[] = [];
+    for (const bom of boms) {
+      if (bom.type === 'bom') {
+        console.log(`Syncing ${bom.name}`);
+        const yamlString:string = await (await axios.get(bom?.versions[0].metadataUrl)).data;
+        res.push(await this.importYaml(yamlString, 'true', true));
       }
     }
-
-    // Set current release
-    try {
-      await this.automationReleaseRepository.deleteById('current');
-    } catch (error) {
-      console.log(error);
-    }
-    const newRelease = await this.automationReleaseRepository.create({
-      id: 'current',
-      url: release.url,
-      tagName: release.tag_name,
-      name: release.name,
-      createdAt: release.created_at,
-      publishedAt: release.published_at,
-      zipballUrl: release.zipball_url,
-      body: release.body,
-    });
-    res.json({
-      release: newRelease,
-      refArchs: success
-    });
+    return res;
   }
 
   @get('/architectures/public/version')
