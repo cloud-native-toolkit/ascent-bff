@@ -54,7 +54,7 @@
     "!*/__tests__"
   ],
   "dependencies": {
-    "@cloudnativetoolkit/iascable": "^3.0.1",
+    "@cloudnativetoolkit/iascable": "^3.1.0",
     "@loopback/boot": "^5.0.4",
     "@loopback/core": "^4.0.4",
     "@loopback/repository": "^5.0.4",
