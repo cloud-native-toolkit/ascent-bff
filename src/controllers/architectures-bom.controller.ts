@@ -423,7 +423,7 @@ export class ArchitecturesBomController {
     for (const bom of boms) {
       if (bom.type === 'bom') {
         console.log(`Syncing ${bom.name}`);
-        const yamlString:string = await (await axios.get(bom?.versions[0].metadataUrl)).data;
+        const yamlString:string = await (await axios.get(bom?.versions[0].metadataUrl ?? '')).data;
         res.push(await this.importYaml(yamlString, 'true', true));
       }
     }
