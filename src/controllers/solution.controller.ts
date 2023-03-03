@@ -529,7 +529,7 @@ This solution was built with the [Techzone Deployer](https://builder.techzone.ib
     for (const catEntry of cat) {
       if (catEntry.type === 'solution') {
         console.log(`Syncing ${catEntry.name}`);
-        const yamlString:string = await (await axios.get(catEntry?.versions[0].metadataUrl)).data;
+        const yamlString:string = await (await axios.get(catEntry?.versions[0].metadataUrl ?? '')).data;
         res.push(await this.importYaml(yamlString, 'true', true));
       }
     }
