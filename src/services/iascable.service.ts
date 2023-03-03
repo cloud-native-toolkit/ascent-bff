@@ -430,8 +430,8 @@ export class IascableService {
         // Lets build a BOM file from the BOM builder
 
         const iascableBundle = await this.catalogBuilder.buildBomsFromCatalog(cat, [bom]);
-        const options = { flatten: false, basePath: '.' };
-        await iascableBundle.writeBundle(getBundleWriter(BundleWriterType.zip), options).generate('result.ignore.zip');
+        const options = { flatten: false, basePath: process.cwd() };
+        await iascableBundle.writeBundle(getBundleWriter(BundleWriterType.zip), options).generate('.result.ignore.zip');
 
         return fs.readFileSync(`${process.cwd()}/.result.ignore.zip`);
     }
@@ -475,9 +475,9 @@ export class IascableService {
         const iascableBundle = await this.catalogBuilder.buildBomsFromCatalog(cat, [sol]);
         const bundleWriter = iascableBundle.writeBundle(
             getBundleWriter(BundleWriterType.zip),
-            {flatten: false, basePath: './'}
+            {flatten: false, basePath: process.cwd()}
           )
-        await bundleWriter.generate('result.ignore.zip');
+        await bundleWriter.generate('.result.ignore.zip');
         return fs.readFileSync(`${process.cwd()}/.result.ignore.zip`);
     }
 
