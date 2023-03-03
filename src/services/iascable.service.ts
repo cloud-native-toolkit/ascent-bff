@@ -376,9 +376,9 @@ export class IascableService {
             throw { message: `Failed to load solution yaml`, details: error };
         }
         if (!isBillOfMaterialModel(sol)) {
-            const solYaml:any = yaml.load(yamlString);
+            const solYaml: any = yaml.load(yamlString);
             delete solYaml.spec.stack;
-            const newSol:Solution = new Solution({
+            const newSol: Solution = new Solution({
                 id: solYaml.metadata?.name,
                 name: `${solYaml.metadata?.annotations?.displayName ?? solYaml.metadata?.name}`,
                 short_desc: solYaml.metadata?.annotations?.description ?? `${solYaml.metadata?.annotations?.displayName ?? solYaml.metadata?.name} Solution.`,
@@ -430,14 +430,14 @@ export class IascableService {
         // Lets build a BOM file from the BOM builder
 
         const iascableBundle = await this.catalogBuilder.buildBomsFromCatalog(cat, [bom]);
-        const options = { flatten: false, basePath: '.' };
-        await iascableBundle.writeBundle(getBundleWriter(BundleWriterType.zip), options).generate('result.ignore.zip');
+        const options = { flatten: false, basePath: process.cwd() };
+        await iascableBundle.writeBundle(getBundleWriter(BundleWriterType.zip), options).generate('.result.ignore.zip');
 
         return fs.readFileSync(`${process.cwd()}/.result.ignore.zip`);
     }
 
     async buildSolution(solution: Solution) {
-        let sol:SolutionModel;
+        let sol: SolutionModel;
         try {
             if (solution.yaml) {
                 sol = yaml.load(solution.yaml);
@@ -451,8 +451,8 @@ export class IascableService {
                 metadata: {
                     name: solution.name,
                     annotations: {
-                      displayName: solution.short_desc,
-                      description: solution.long_desc
+                        displayName: solution.short_desc,
+                        description: solution.long_desc
                     }
                 },
                 spec: {
@@ -475,9 +475,9 @@ export class IascableService {
         const iascableBundle = await this.catalogBuilder.buildBomsFromCatalog(cat, [sol]);
         const bundleWriter = iascableBundle.writeBundle(
             getBundleWriter(BundleWriterType.zip),
-            {flatten: false, basePath: './'}
-          )
-        await bundleWriter.generate('result.ignore.zip');
+            { flatten: false, basePath: process.cwd() }
+        );
+        await bundleWriter.generate('.result.ignore.zip');
         return fs.readFileSync(`${process.cwd()}/.result.ignore.zip`);
     }
 
