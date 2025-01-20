@@ -54,7 +54,7 @@ export class MongodbDataSource extends juggler.DataSource
       database: mongodbConn.database,
       authSource: mongodbConn?.query_options?.authSource,
       useNewUrlParser: true,
-      ssl: mongodbConn?.certificate?.certificate_base64 ? true : false,
+      ssl: mongodbConn?.query_options?.tls,
       sslValidate: mongodbConn?.certificate?.certificate_base64 ? true : false,
       checkServerIdentity: false,
       sslCA: mongodbConn?.certificate?.certificate_base64 ? [Buffer.from(mongodbConn?.certificate?.certificate_base64, 'base64')] : [],

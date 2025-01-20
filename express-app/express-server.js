@@ -48,7 +48,9 @@ app.post('/token', (req, res, next) => {
         })
 });
 
+console.log('NODE_ENV: ' + process.env.NODE_ENV + '')
 if (!['dev', 'test'].includes(process.env.NODE_ENV)) {
+    console.log('Configuring App ID authentication')
 
     // If the OCP_API_URL environment variable is not set, then use App ID
     if (!process.env.OCP_API_URL) {
