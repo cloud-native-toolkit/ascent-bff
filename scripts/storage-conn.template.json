@@ -1,0 +1,5 @@
+{
+  "endpoints": "https://control.cloud-object-storage.cloud.ibm.com/v2/endpoints",
+  "apikey": "",
+  "resource_instance_id": ""
+}

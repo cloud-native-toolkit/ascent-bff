@@ -1,0 +1,20 @@
+{
+  "connection": {
+    "mongodb": {
+      "composed": ["mongodb://mongodb:27017/mongodb"],
+      "authentication": {
+        "username": "mongodb",
+        "password": "passw0rd"
+      },
+      "hosts": [{
+        "hostname": "localhost",
+        "port": 27017
+      }],
+      "database": "mongodb",
+      "query_options": {
+        "authSource": "admin",
+        "tls": true
+      }
+    }
+  }
+}

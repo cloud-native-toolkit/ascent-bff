@@ -66,7 +66,7 @@ export class ArchitecturesController {
 
     // console.log("Constructor for Architecture API")
 
-    if (process.env.NODE_ENV !== 'test') {
+    if (!['dev', 'test'].includes(process.env.NODE_ENV ? process.env.NODE_ENV : 'staging')) {
 
       // Load Information from Environment
       const services = Services.getInstance();
