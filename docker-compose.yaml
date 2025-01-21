@@ -1,17 +1,8 @@
 version: '3'
 services:
-#  ascent-ui:
-#    image: quay.io/cloudnativetoolkit/ascent-ui:0.0.77
-#    environment:
-#      - API_HOST=http://ascent-bff:3001
-#      - NODE_ENV=test
-#    ports:
-#      - "3000:3000"
-#    depends_on:
-#      - ascent-bff
   ascent-bff:
-#    image: quay.io/cloudnativetoolkit/ascent-bff:1.0.26
-    build: .
+    image: quay.io/cloudnativetoolkit/ascent-bff:v1.1.0
+#    build: .
     environment:
       - DATABASE_TEST={"connection":{"mongodb":{"composed":["mongodb://mongodb:27017/mongodb"],"authentication":{"username":"mongodb","password":"passw0rd"},"hosts":[{"hostname":"localhost","port":27017}],"database":"mongodb","query_options":{"authSource":"admin","tls":false}}}}
       - DATABASE_DEV={"connection":{"mongodb":{"composed":["mongodb://mongodb:27017/mongodb"],"authentication":{"username":"mongodb","password":"passw0rd"},"hosts":[{"hostname":"localhost","port":27017}],"database":"mongodb","query_options":{"authSource":"admin","tls":false}}}}

@@ -105,6 +105,38 @@ A script has been provided to simplify this process. The steps to run the script
     ❯ yarn start:dev
     ```
 
+## Run in Podman compose
+
+**Note:** You need podman and podman-compose installed before running these instructions. On Mac, you can install both using Homebrew 
+with the following command:
+
+```shell
+brew install podman podman-compose
+```
+
+**Note:** The backend is currently running a container image version from the image registry. If you would like to run from the current
+version of the code, comment out the `image` line and uncomment the `build` line. Watching for changes to the code and dynamically
+rebuilding the image is possible but requires some additional configuration in the `docker-compose.yaml` file.
+
+### Start the containers
+
+Start the compose project by running the following command from the root of this git repo folder:
+
+```shell
+podman compose -f docker-compose.yaml up
+```
+
+The BFF layer will be listening on localhost:3001 and the mongodb server will be listening on localhost:27017 if you want to connect
+to the mongodb server directly. The credentials to access mongodb are in the `docker-compose.yaml` file.
+
+### Stop the containers
+
+When you are ready to stop the containers, run the following command:
+
+```shell
+podman compose down
+```
+
 ## Deploy on OpenShift
 
 ### Set up
