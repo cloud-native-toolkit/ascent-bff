@@ -1,11 +1,11 @@
-FROM registry.access.redhat.com/ubi8/nodejs-16-minimal:1-79
+FROM registry.access.redhat.com/ubi9/nodejs-22:9.5-1740412185
 
-USER 1001
+USER default
 
 WORKDIR /opt/app-root/src
 
-COPY --chown=1001 . .
-RUN npm install && \
+COPY --chown=default:root . .
+RUN npm ci && \
     npm run compile
 
 ENV HOST=0.0.0.0 PORT=3001

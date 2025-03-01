@@ -15,6 +15,7 @@ import {
     'UserController.prototype.findUserArchitecturesById',
     'UserController.prototype.findUserSolutionsById',
     'UserController.prototype.updateById',
+    'UserController.prototype.addUser',
   ]
   
   /**
