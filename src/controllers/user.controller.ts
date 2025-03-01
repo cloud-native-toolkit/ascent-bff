@@ -2,9 +2,9 @@ import {
   repository,
 } from '@loopback/repository';
 import {
-  param, get, response, getModelSchemaRef, patch, requestBody
+  param, get, response, getModelSchemaRef, patch, requestBody, post
 } from '@loopback/rest';
-import {Architectures, Solution, User} from '../models';
+import {Architectures, Bom, Solution, User} from '../models';
 import {UserRepository} from '../repositories';
 
 export class UserController {
@@ -93,4 +93,27 @@ export class UserController {
     return this.userRepository.findById(id);
   }
 
+  @post('/users')
+  @response(200, {
+    description: 'User model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(User, {includeRelations: true}),
+      },
+    },
+  })
+  async addUser(
+      @requestBody({
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(User, {
+              title: 'NewUser',
+            }),
+          },
+        },
+      })
+      user: User
+  ): Promise<User> {
+    return this.userRepository.create(user);
+  }
 }

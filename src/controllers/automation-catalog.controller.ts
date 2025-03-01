@@ -27,7 +27,9 @@ import { ArchitecturesController, DiagramType } from './architectures.controller
 
 import { IascableService, Service } from '../services/iascable.service';
 import { S3 } from 'ibm-cos-sdk';
+import {Catalog} from "@cloudnativetoolkit/iascable";
 
+export type CatalogResult = Omit<Catalog, "modules" | "moduleIdAliases" | "flattenedAliases">
 
 export class AutomationCatalogController {
 
@@ -58,11 +60,13 @@ export class AutomationCatalogController {
   }
 
   @get('/automation/catalog/boms')
-  async getBomsCatalog(): Promise<object> {
-    const catalog = JSON.parse(JSON.stringify(await this.iascableService.getCatalog()));
+  async getBomsCatalog(): Promise<CatalogResult> {
+    const catalog: any = Object.assign({}, (await this.iascableService.getCatalog()));
+
     delete catalog.modules;
     delete catalog.moduleIdAliases;
     delete catalog.flattenedAliases;
+
     return catalog;
   }
 

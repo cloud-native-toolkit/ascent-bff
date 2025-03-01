@@ -1,7 +1,8 @@
 version: '3'
 services:
   ascent-bff:
-    image: quay.io/cloudnativetoolkit/ascent-bff:v1.1.0
+    image: ascent-bff-next
+#    image: quay.io/cloudnativetoolkit/ascent-bff:v1.1.0
 #    build: .
     environment:
       - DATABASE_TEST={"connection":{"mongodb":{"composed":["mongodb://mongodb:27017/mongodb"],"authentication":{"username":"mongodb","password":"passw0rd"},"hosts":[{"hostname":"localhost","port":27017}],"database":"mongodb","query_options":{"authSource":"admin","tls":false}}}}
@@ -22,3 +23,7 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=mongodb
       - MONGO_INITDB_ROOT_PASSWORD=passw0rd
+    volumes:
+      - type: bind
+        source: ./data/db
+        target: /data/db
