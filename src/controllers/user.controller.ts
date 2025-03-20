@@ -2,10 +2,12 @@ import {
   repository,
 } from '@loopback/repository';
 import {
-  param, get, response, getModelSchemaRef, patch, requestBody
+  param, get, response, getModelSchemaRef, patch, requestBody, post
 } from '@loopback/rest';
 import {Architectures, Solution, User} from '../models';
 import {UserRepository} from '../repositories';
+
+type NewUser = Omit<User, 'id' | 'solutions' | 'architectures' | 'config'>;
 
 export class UserController {
   constructor(
@@ -91,6 +93,28 @@ export class UserController {
   ): Promise<User> {
     await this.userRepository.updateById(id, user);
     return this.userRepository.findById(id);
+  }
+
+  @post('/users')
+  @response(200, {
+    description: 'User model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(User, {includeRelations: true}),
+      },
+    },
+  })
+  async create(
+      @requestBody({
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(User, {partial: true, exclude: ['architectures', 'solutions', 'config']}),
+          },
+        },
+      }) newUser: NewUser,
+  ): Promise<User> {
+
+    return this.userRepository.create(newUser);
   }
 
 }
