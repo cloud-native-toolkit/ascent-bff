@@ -8,7 +8,7 @@ COPY --chown=1001 . .
 RUN npm install && \
     npm run compile
 
-ENV HOST=0.0.0.0 PORT=3001
+ENV NODE_ENV=staging HOST=0.0.0.0 PORT=3001
 
 EXPOSE ${PORT}
 CMD ["npm", "run", "serve"]
